@@ -1,0 +1,86 @@
+syntax = "proto3";
+option go_package = "github.com/odysseia-greek/attike/aristophanes/proto";
+
+package proto;
+
+message Trace {
+  string span_id = 1;
+  string parent_span_id = 2;
+  string method = 3;
+  string url = 4;
+  string timestamp = 5;
+  string pod_name = 6;
+  string namespace = 7;
+  string item_type = 8;
+}
+
+message Span {
+  string span_id = 1;
+  string parent_span_id = 2;
+  string timestamp = 3;
+  string pod_name = 4;
+  string namespace = 5;
+  string action = 6; // Action performed in the span
+  string request_body = 7; // Optional: Request body data
+  string response_body = 8; // Optional: Response body data
+  string item_type = 9;
+}
+
+message DatabaseSpan {
+  string span_id = 1;
+  string parent_span_id = 2;
+  string timestamp = 3;
+  string pod_name = 4;
+  string namespace = 5;
+  string query = 6; // Database query statement
+  string result_json = 7; // Query result data as JSON string
+  string item_type = 8;
+}
+
+service TraceService {
+  rpc StartTrace(StartTraceRequest) returns (TraceResponse);
+  rpc Trace(TraceRequest) returns (TraceResponse);
+  rpc StartNewSpan(StartSpanRequest) returns (TraceResponse);
+  rpc Span(SpanRequest) returns (TraceResponse);
+  rpc DatabaseSpan(DatabaseSpanRequest) returns (TraceResponse);
+}
+
+message StartTraceRequest {
+  string method = 1;
+  string url = 2;
+  bool save_trace = 3; // Indicates whether the trace should be saved
+}
+
+message StartSpanRequest {
+  string trace_id = 1;
+}
+
+message SpanRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  bool save_trace = 3; // Indicates whether the trace should be saved
+  string action = 4; // Action performed in the span
+  string request_body = 5; // Optional: Request body data
+  string response_body = 6; // Optional: Response body data
+}
+
+message DatabaseSpanRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  bool save_trace = 3; // Indicates whether the trace should be saved
+  string action = 4; // Action performed in the span
+  string query = 6; // Database query statement
+  string result_json = 7; // Query result data as JSON string
+}
+
+message TraceResponse {
+  string combined_id = 1;
+}
+
+message TraceRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  string method = 3;
+  string url = 4;
+  bool save_trace = 5; // Indicates whether the trace should be saved
+}

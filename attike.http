@@ -1,0 +1,50 @@
+###
+GRPC localhost:50052/proto.TraceService/StartTrace
+
+{
+  "method": "GET",
+  "url": "http://k3s-api-odysseia.com/getIt",
+  "save_trace": true
+}
+
+###
+GRPC localhost:50052/proto.TraceService/Trace
+
+{
+  "trace_id": "ff6d0749-6266-4d76-b693-fe376e7bfe3b",
+  "parent_span_id": "b700ed17b8e0840c",
+  "method": "GET",
+  "url": "http://k3s-api-odysseia.com/getIt",
+  "save_trace": true
+}
+
+###
+GRPC localhost:50052/proto.TraceService/StartNewSpan
+
+{
+  "trace_id": "ff6d0749-6266-4d76-b693-fe376e7bfe3b"
+}
+
+###
+GRPC localhost:50052/proto.TraceService/Span
+
+{
+  "trace_id": "ff6d0749-6266-4d76-b693-fe376e7bfe3b",
+  "parent_span_id": "b700ed17b8e0840c",
+  "save_trace": true,
+  "action": "GetSomething",
+  "request_body": "{ \"sentenceId\": \"EmUfwX8BFAEUBcEdfSb7Ty\", \"answerSentence\": \"i have tried\",\"author\": \"plato\" }",
+  "response_body": "{ \"sentenceId\": \"EmUfwX8BFAEUBcEdfSb7Ty\", \"answerSentence\": \"i have tried\",\"author\": \"plato\" }"
+}
+
+###
+GRPC localhost:50052/proto.TraceService/DatabaseSpan
+
+{
+  "trace_id": "ff6d0749-6266-4d76-b693-fe376e7bfe3b",
+  "parent_span_id": "b700ed17b8e0840c",
+  "action": "FindAllDocuments",
+  "save_trace": true,
+  "query": "{ \"size\": 1, \"query\": { \"multi_match\": { \"query\": \"μάχη\", \"type\": \"bool_prefix\", \"fields\": [ \"greek\", \"greek._2gram\", \"greek._3gram\" ] } } }",
+  "result_json": "{\"took\": 12, \"timed_out\": false, \"_shards\": { \"total\": 1, \"successful\": 1, \"skipped\": 0, \"failed\": 0 }, \"hits\": { \"total\": { \"value\": 158, \"relation\": \"eq\" }, \"max_score\": 53.79459, \"hits\": [ { \"_index\": \"dictionary\", \"_id\": \"AyML9IkBiMW0F27kxLqL\", \"_score\": 53.79459, \"_source\": { \"greek\": \"μάχη\", \"english\": \"battle, fight, combat\", \"original\": \"μάχη\" } } ] } }"
+}
