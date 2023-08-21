@@ -1,0 +1,118 @@
+syntax = "proto3";
+option go_package = "github.com/odysseia-greek/attike/aristophanes/proto";
+
+package proto;
+
+
+message TraceStart {
+  string parent_span_id = 2;
+  string method = 3;
+  string url = 4;
+  string host = 5;
+  string remote_address = 6;
+  string timestamp = 7;
+  string pod_name = 8;
+  string namespace = 9;
+  string item_type = 10;
+  string operation = 11;
+  string root_query = 12;
+}
+
+message TraceStop {
+  string parent_span_id = 1;
+  string timestamp = 2;
+  string pod_name = 3;
+  string namespace = 4;
+  string response_body = 5;
+}
+
+message Trace {
+  string span_id = 1;
+  string parent_span_id = 2;
+  string method = 3;
+  string url = 4;
+  string host = 5;
+  string timestamp = 6;
+  string pod_name = 7;
+  string namespace = 8;
+  string item_type = 9;
+}
+
+message Span {
+  string span_id = 1;
+  string parent_span_id = 2;
+  string timestamp = 3;
+  string pod_name = 4;
+  string namespace = 5;
+  string action = 6; // Action performed in the span
+  string request_body = 7; // Optional: Request body data
+  string response_body = 8; // Optional: Response body data
+  string item_type = 9;
+}
+
+message DatabaseSpan {
+  string span_id = 1;
+  string parent_span_id = 2;
+  string timestamp = 3;
+  string pod_name = 4;
+  string namespace = 5;
+  string query = 6; // Database query statement
+  string result_json = 7; // Query result data as JSON string
+  string item_type = 8;
+}
+
+service TraceService {
+  rpc StartTrace(StartTraceRequest) returns (TraceResponse);
+  rpc Trace(TraceRequest) returns (TraceResponse);
+  rpc StartNewSpan(StartSpanRequest) returns (TraceResponse);
+  rpc Span(SpanRequest) returns (TraceResponse);
+  rpc DatabaseSpan(DatabaseSpanRequest) returns (TraceResponse);
+  rpc CloseTrace(CloseTraceRequest) returns (TraceResponse);
+}
+
+message StartTraceRequest {
+  string method = 1;
+  string url = 2;
+  string host = 3;
+  string remote_address = 4;
+  string root_query = 5;
+  string operation = 6;
+}
+
+message CloseTraceRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  string response_body = 3;
+}
+
+message StartSpanRequest {
+  string trace_id = 1;
+}
+
+message SpanRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  string action = 3; // Action performed in the span
+  string request_body = 4; // Optional: Request body data
+  string response_body = 5; // Optional: Response body data
+}
+
+message DatabaseSpanRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  string action = 4; // Action performed in the span
+  string query = 5; // Database query statement
+  string result_json = 6; // Query result data as JSON string
+}
+
+message TraceResponse {
+  string combined_id = 1;
+}
+
+message TraceRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  string method = 3;
+  string url = 4;
+  string host = 5;
+}
