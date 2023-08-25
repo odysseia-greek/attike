@@ -6,6 +6,7 @@ import (
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	"google.golang.org/grpc"
 	"sync"
+	"time"
 )
 
 type TraceService interface {
@@ -18,10 +19,11 @@ type TraceService interface {
 }
 
 type TraceServiceImpl struct {
-	PodName   string
-	Namespace string
-	Index     string
-	Elastic   aristoteles.Client
+	PodName      string
+	Namespace    string
+	Index        string
+	Elastic      aristoteles.Client
+	StartTimeMap map[string]time.Time
 	pb.UnimplementedTraceServiceServer
 	mu sync.Mutex // Mutex to protect the task queue
 }

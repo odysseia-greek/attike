@@ -82,7 +82,7 @@ message StartTraceRequest {
 message CloseTraceRequest {
   string trace_id = 1;
   string parent_span_id = 2;
-  string response_body = 3;
+  int32 response_code = 4;
 }
 
 message StartSpanRequest {
