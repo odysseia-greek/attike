@@ -43,9 +43,9 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	jsonData := map[string]interface{}{
 		"items":       []pb.TraceStart{trace},
 		"isActive":    true,
-		"timeStarted": traceTime,
-		"timeEnded":   "",
-		"totalTime":   "",
+		"timeStarted": traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
+		"timeEnded":   "1970-01-01T00:00:00.000",                   // Default null-like value
+		"totalTime":   0,
 	}
 
 	data, err := json.Marshal(&jsonData)
@@ -55,7 +55,7 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 
 	doc, err := t.Elastic.Document().CreateWithId(t.Index, traceId, data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
 	log.Printf("created trace with id: %s", doc.ID)
@@ -74,7 +74,6 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 		PodName:      t.PodName,
 		Namespace:    t.Namespace,
-		ResponseBody: stop.ResponseBody,
 	}
 
 	data, err := json.Marshal(&trace)
@@ -97,7 +96,7 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 
 	closingTrace := map[string]interface{}{
 		"isActive":     false,
-		"timeEnded":    traceTime,
+		"timeEnded":    traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
 		"totalTime":    totalTime,
 		"responseCode": stop.ResponseCode,
 	}
@@ -109,7 +108,7 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 
 	doc, err := t.Elastic.Document().Update(t.Index, stop.TraceId, update)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
 	// Remove the entry from the map
@@ -151,7 +150,7 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 
 	docID, err := t.UpdateDocumentWithRetry(traceRequest.TraceId, ITEMS, data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
 	log.Printf("added trace with id: %s", docID)
@@ -184,7 +183,7 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 
 	docID, err := t.UpdateDocumentWithRetry(spanRequest.TraceId, ITEMS, data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
 	log.Printf("added span with id: %s to trace: %s", spanId, docID)
@@ -216,7 +215,7 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 
 	docID, err := t.UpdateDocumentWithRetry(spanRequest.TraceId, ITEMS, data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
 	log.Printf("added database_span with id: %s to trace: %s", spanId, docID)
@@ -251,7 +250,6 @@ func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, dat
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		doc, err := t.Elastic.Document().AddItemToDocument(t.Index, traceID, string(data), itemName)
 		if err == nil {
-			log.Printf("added %v attempt(s)", attempt)
 			return doc.ID, nil
 		}
 
