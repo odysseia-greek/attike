@@ -1,11 +1,11 @@
-module github.com/odysseia-greek/attike
+module github.com/odysseia-greek/attike/aristophanes
 
 go 1.20
 
 require (
-	github.com/google/uuid v1.3.0
-	github.com/odysseia-greek/aristoteles v0.4.2
-	github.com/odysseia-greek/plato v0.7.2
+	github.com/google/uuid v1.3.1
+	github.com/odysseia-greek/aristoteles v0.4.7
+	github.com/odysseia-greek/plato v0.7.3
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0

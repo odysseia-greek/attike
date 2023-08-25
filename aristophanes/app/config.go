@@ -5,6 +5,7 @@ import (
 	"github.com/odysseia-greek/aristoteles/models"
 	"github.com/odysseia-greek/plato/config"
 	"os"
+	"time"
 )
 
 const (
@@ -48,11 +49,13 @@ func NewTraceServiceImpl(env string) (*TraceServiceImpl, error) {
 	}
 
 	index := config.StringFromEnv(config.EnvIndex, config.TracingElasticIndex)
+	startTimeMap := make(map[string]time.Time)
 
 	return &TraceServiceImpl{
-		PodName:   podName,
-		Namespace: namespace,
-		Elastic:   elastic,
-		Index:     index,
+		StartTimeMap: startTimeMap,
+		PodName:      podName,
+		Namespace:    namespace,
+		Elastic:      elastic,
+		Index:        index,
 	}, nil
 }

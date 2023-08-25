@@ -23,13 +23,16 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	traceId := uuid.New().String()
 	spanId := t.generateSpanID()
 
+	traceTime := time.Now().UTC()
+	t.StartTimeMap[traceId] = traceTime
+
 	trace := pb.TraceStart{
 		ParentSpanId:  spanId,
 		Method:        start.Method,
 		Url:           start.Url,
 		Host:          start.Host,
 		RemoteAddress: start.RemoteAddress,
-		Timestamp:     time.Now().UTC().Format("2006-01-02'T'15:04:05"),
+		Timestamp:     traceTime.Format("2006-01-02'T'15:04:05.000"),
 		PodName:       t.PodName,
 		Namespace:     t.Namespace,
 		ItemType:      TRACE,
@@ -38,8 +41,11 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	}
 
 	jsonData := map[string]interface{}{
-		"items":    []pb.TraceStart{trace},
-		"isActive": true,
+		"items":       []pb.TraceStart{trace},
+		"isActive":    true,
+		"timeStarted": traceTime,
+		"timeEnded":   "",
+		"totalTime":   "",
 	}
 
 	data, err := json.Marshal(&jsonData)
@@ -61,9 +67,11 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 }
 
 func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRequest) (*pb.TraceResponse, error) {
+	traceTime := time.Now().UTC()
+
 	trace := pb.TraceStop{
 		ParentSpanId: stop.ParentSpanId,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05"),
+		Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 		PodName:      t.PodName,
 		Namespace:    t.Namespace,
 		ResponseBody: stop.ResponseBody,
@@ -74,13 +82,24 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		return nil, err
 	}
 
-	doc, err := t.Elastic.Document().AddItemToDocument(t.Index, stop.TraceId, string(data), ITEMS)
+	_, err = t.UpdateDocumentWithRetry(stop.TraceId, ITEMS, data)
 	if err != nil {
 		return nil, err
 	}
 
+	var totalTime int64
+	originalTimeStart, found := t.StartTimeMap[stop.TraceId]
+	if !found {
+		totalTime = 0
+	} else {
+		totalTime = traceTime.Sub(originalTimeStart).Milliseconds()
+	}
+
 	closingTrace := map[string]interface{}{
-		"isActive": false,
+		"isActive":     false,
+		"timeEnded":    traceTime,
+		"totalTime":    totalTime,
+		"responseCode": stop.ResponseCode,
 	}
 
 	update, err := json.Marshal(closingTrace)
@@ -88,12 +107,14 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		return nil, err
 	}
 
-	updatedDoc, err := t.Elastic.Document().Update(t.Index, stop.TraceId, update)
+	doc, err := t.Elastic.Document().Update(t.Index, stop.TraceId, update)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("current version: %v", updatedDoc.Version)
+	// Remove the entry from the map
+	delete(t.StartTimeMap, doc.ID)
+
 	log.Printf("closed trace with id: %s", doc.ID)
 
 	return &pb.TraceResponse{
@@ -118,7 +139,7 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 		Method:       traceRequest.Method,
 		Url:          traceRequest.Url,
 		Host:         traceRequest.Host,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05"),
+		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
 		PodName:      t.PodName,
 		Namespace:    t.Namespace,
 		ItemType:     TRACE,
@@ -128,12 +149,12 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 		return nil, err
 	}
 
-	doc, err := t.Elastic.Document().AddItemToDocument(t.Index, traceRequest.TraceId, string(data), ITEMS)
+	docID, err := t.UpdateDocumentWithRetry(traceRequest.TraceId, ITEMS, data)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("added trace with id: %s", doc.ID)
+	log.Printf("added trace with id: %s", docID)
 
 	combinedId := fmt.Sprintf("%s+%s", traceRequest.TraceId, traceRequest.ParentSpanId)
 	return &pb.TraceResponse{
@@ -147,7 +168,7 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 	span := pb.Span{
 		SpanId:       spanId,
 		ParentSpanId: spanRequest.ParentSpanId,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05"),
+		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
 		PodName:      t.PodName,
 		Namespace:    t.Namespace,
 		Action:       spanRequest.Action,
@@ -161,12 +182,12 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 		return nil, err
 	}
 
-	doc, err := t.Elastic.Document().AddItemToDocument(t.Index, spanRequest.TraceId, string(data), ITEMS)
+	docID, err := t.UpdateDocumentWithRetry(spanRequest.TraceId, ITEMS, data)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("added span with id: %s to trace: %s", spanId, doc.ID)
+	log.Printf("added span with id: %s to trace: %s", spanId, docID)
 
 	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
 	return &pb.TraceResponse{
@@ -180,7 +201,7 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 	span := pb.DatabaseSpan{
 		SpanId:       spanId,
 		ParentSpanId: spanRequest.ParentSpanId,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05"),
+		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
 		PodName:      t.PodName,
 		Namespace:    t.Namespace,
 		Query:        spanRequest.Query,
@@ -193,12 +214,12 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 		return nil, err
 	}
 
-	doc, err := t.Elastic.Document().AddItemToDocument(t.Index, spanRequest.TraceId, string(data), ITEMS)
+	docID, err := t.UpdateDocumentWithRetry(spanRequest.TraceId, ITEMS, data)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("added database_span with id: %s to trace: %s", spanId, doc.ID)
+	log.Printf("added database_span with id: %s to trace: %s", spanId, docID)
 
 	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
 	return &pb.TraceResponse{
@@ -221,4 +242,24 @@ func (t *TraceServiceImpl) generateSpanID() string {
 	spanID := hex.EncodeToString(randomBytes)
 
 	return spanID
+}
+
+func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
+	maxRetries := 10
+	retryDelay := 50 * time.Millisecond
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		doc, err := t.Elastic.Document().AddItemToDocument(t.Index, traceID, string(data), itemName)
+		if err == nil {
+			log.Printf("added %v attempt(s)", attempt)
+			return doc.ID, nil
+		}
+
+		if attempt < maxRetries {
+			// Sleep before the next retry
+			time.Sleep(retryDelay)
+		}
+	}
+
+	return "", fmt.Errorf("failed after %d attempts", maxRetries)
 }
