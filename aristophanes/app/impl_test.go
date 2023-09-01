@@ -3,10 +3,9 @@ package app
 import (
 	"context"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
 )
 
 func TestStartTraceMocked(t *testing.T) {
