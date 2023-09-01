@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestTraceService(t *testing.T) {
@@ -22,6 +23,7 @@ func TestTraceService(t *testing.T) {
 			RootQuery:     "/graphql",
 			Operation:     "Something",
 		}
+		startTimeMap := make(map[string]time.Time)
 
 		t.Run("SuccessfulStart", func(t *testing.T) {
 			fixtureFile := "info"
@@ -31,10 +33,11 @@ func TestTraceService(t *testing.T) {
 
 			// Create the handler using the mock
 			handler := &TraceServiceImpl{
-				PodName:   "testpod",
-				Namespace: "testnamespace",
-				Index:     "test",
-				Elastic:   mockElasticClient,
+				PodName:      "testpod",
+				Namespace:    "testnamespace",
+				Index:        "test",
+				Elastic:      mockElasticClient,
+				StartTimeMap: startTimeMap,
 			}
 
 			// Call the method being tested
@@ -56,10 +59,11 @@ func TestTraceService(t *testing.T) {
 
 			// Create the handler using the mock
 			handler := &TraceServiceImpl{
-				PodName:   "testpod",
-				Namespace: "testnamespace",
-				Index:     "test",
-				Elastic:   mockElasticClient,
+				PodName:      "testpod",
+				Namespace:    "testnamespace",
+				Index:        "test",
+				Elastic:      mockElasticClient,
+				StartTimeMap: startTimeMap,
 			}
 
 			// Call the method being tested
@@ -73,6 +77,8 @@ func TestTraceService(t *testing.T) {
 }
 
 func TestTraceClose(t *testing.T) {
+	startTimeMap := make(map[string]time.Time)
+
 	t.Run("CloseTrace", func(t *testing.T) {
 		request := &pb.CloseTraceRequest{
 			TraceId:      "841a4f73-ba5b-4c38-9237-e1ad91459028",
@@ -88,10 +94,11 @@ func TestTraceClose(t *testing.T) {
 
 			// Create the handler using the mock
 			handler := &TraceServiceImpl{
-				PodName:   "testpod",
-				Namespace: "testnamespace",
-				Index:     "test",
-				Elastic:   mockElasticClient,
+				PodName:      "testpod",
+				Namespace:    "testnamespace",
+				Index:        "test",
+				Elastic:      mockElasticClient,
+				StartTimeMap: startTimeMap,
 			}
 
 			// Call the method being tested
