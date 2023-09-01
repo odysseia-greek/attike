@@ -3,95 +3,101 @@ option go_package = "github.com/odysseia-greek/attike/aristophanes/proto";
 
 package proto;
 
+// Common message used in various trace-related messages
+message TraceCommon {
+  string span_id = 1; // The span_id will be generated automatically
+  string parent_span_id = 2; // The root parent_span_id
+  string timestamp = 3; // Timestamp will be set automatically
+  string pod_name = 4; // Pod that generated Trace
+  string namespace = 5; // Namespace that generated Trace
+  string item_type = 6; // TRACE, SPAN, etc.
+}
 
 message TraceStart {
-  string parent_span_id = 2;
-  string method = 3;
-  string url = 4;
-  string host = 5;
-  string remote_address = 6;
-  string timestamp = 7;
-  string pod_name = 8;
-  string namespace = 9;
-  string item_type = 10;
-  string operation = 11;
-  string root_query = 12;
+  string method = 1; // GET POST PUT, etc.
+  string url = 2; // The URL called by a client
+  string host = 3; // The host that generated the trace
+  string remote_address = 4; // Remote address of the client
+  string operation = 5; // Graphql operation that generated Trace start
+  string root_query = 6; // Graphql Root Query
+  // Reuse TraceCommon for common fields
+  TraceCommon common = 7;
 }
 
 message TraceStop {
-  string parent_span_id = 1;
-  string timestamp = 2;
-  string pod_name = 3;
-  string namespace = 4;
-  string response_body = 5;
+  string response_body = 1; // The response generated when a 200 is returned
+  // Reuse TraceCommon for common fields
+  TraceCommon common = 2;
 }
 
 message Trace {
-  string span_id = 1;
-  string parent_span_id = 2;
-  string method = 3;
-  string url = 4;
-  string host = 5;
-  string timestamp = 6;
-  string pod_name = 7;
-  string namespace = 8;
-  string item_type = 9;
+  string method = 1; // GET POST PUT, etc.
+  string url = 2; // The URL called by a client
+  string host = 3; // The host that generated the trace
+  // Reuse TraceCommon for common fields
+  TraceCommon common = 4;
 }
 
 message Span {
-  string span_id = 1;
-  string parent_span_id = 2;
-  string timestamp = 3;
-  string pod_name = 4;
-  string namespace = 5;
-  string action = 6; // Action performed in the span
-  string request_body = 7; // Optional: Request body data
-  string response_body = 8; // Optional: Response body data
-  string item_type = 9;
+  string action = 1; // Action performed in the span
+  string request_body = 2; // Optional: Request body data
+  string response_body = 3; // Optional: Response body data
+  // Reuse TraceCommon for common fields
+  TraceCommon common = 4;
 }
 
 message DatabaseSpan {
-  string span_id = 1;
-  string parent_span_id = 2;
-  string timestamp = 3;
-  string pod_name = 4;
-  string namespace = 5;
-  string query = 6; // Database query statement
-  string result_json = 7; // Query result data as JSON string
-  string item_type = 8;
+  string query = 1; // Database query statement
+  string result_json = 2; // Query result data as JSON string
+  // Reuse TraceCommon for common fields
+  TraceCommon common = 3;
 }
 
+// The TraceService service provides operations for managing and tracking traces and spans.
 service TraceService {
+  // Start a new trace.
   rpc StartTrace(StartTraceRequest) returns (TraceResponse);
+
+  // Record a new trace within an existing trace.
   rpc Trace(TraceRequest) returns (TraceResponse);
+
+  // Start a new span within an existing trace.
   rpc StartNewSpan(StartSpanRequest) returns (TraceResponse);
+
+  // Record a span with details of an action performed.
   rpc Span(SpanRequest) returns (TraceResponse);
+
+  // Record a span related to a database query.
   rpc DatabaseSpan(DatabaseSpanRequest) returns (TraceResponse);
+
+  // Close an existing trace.
   rpc CloseTrace(CloseTraceRequest) returns (TraceResponse);
 }
 
+
 message StartTraceRequest {
-  string method = 1;
-  string url = 2;
-  string host = 3;
-  string remote_address = 4;
-  string root_query = 5;
-  string operation = 6;
+  string method = 1; // GET POST PUT, etc.
+  string url = 2; // The URL called by a client
+  string host = 3; // The host that generated the trace
+  string remote_address = 4; // Remote address of the client
+  string operation = 5; // Graphql operation that generated Trace start
+  string root_query = 6; // Graphql Root Query
 }
 
 message CloseTraceRequest {
-  string trace_id = 1;
-  string parent_span_id = 2;
+  string trace_id = 1; // Root trace_id which where item will be added
+  string parent_span_id = 2;  // The root parent_span_id
+  string response_body = 3; // Optional: Response body data
   int32 response_code = 4;
 }
 
 message StartSpanRequest {
-  string trace_id = 1;
+  string trace_id = 1; // Root trace_id which where item will be added
 }
 
 message SpanRequest {
-  string trace_id = 1;
-  string parent_span_id = 2;
+  string trace_id = 1; // Root trace_id which where item will be added
+  string parent_span_id = 2;  // The root parent_span_id
   string action = 3; // Action performed in the span
   string request_body = 4; // Optional: Request body data
   string response_body = 5; // Optional: Response body data
@@ -99,20 +105,20 @@ message SpanRequest {
 
 message DatabaseSpanRequest {
   string trace_id = 1;
-  string parent_span_id = 2;
-  string action = 4; // Action performed in the span
-  string query = 5; // Database query statement
-  string result_json = 6; // Query result data as JSON string
+  string parent_span_id = 2;  // The root parent_span_id
+  string action = 3; // Action performed in the span
+  string query = 4; // Database query statement
+  string result_json = 5; // Query result data as JSON string
 }
 
 message TraceResponse {
-  string combined_id = 1;
+  string combined_id = 1; // Combination of the trace_id, parent_span_id and sampling bool for example: 841a4f73-ba5b-4c38-9237-e1ad91459028+70b993de1e2f879d+1
 }
 
 message TraceRequest {
-  string trace_id = 1;
-  string parent_span_id = 2;
-  string method = 3;
-  string url = 4;
-  string host = 5;
+  string trace_id = 1; // Root trace_id which where item will be added
+  string parent_span_id = 2;  // The root parent_span_id
+  string method = 3; // GET POST PUT, etc.
+  string url = 4; // The URL called by a client
+  string host = 5; // The host that generated the trace
 }

@@ -76,6 +76,10 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		Namespace:    t.Namespace,
 	}
 
+	if stop.ResponseBody != "" {
+		trace.ResponseBody = stop.ResponseBody
+	}
+
 	data, err := json.Marshal(&trace)
 	if err != nil {
 		return nil, err
