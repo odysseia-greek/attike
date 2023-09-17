@@ -20,11 +20,11 @@ GRPC localhost:50052/proto.TraceService/CloseTrace
 GRPC localhost:50052/proto.TraceService/Trace
 
 {
-  "trace_id": "1afdaf76-9ca6-4a29-bf71-14f03ba5e01c",
+  "trace_id": "30990a3b-7756-4294-a1ca-8dea4295aef1",
   "parent_span_id": "b700ed17b8e0840c",
   "method": "GET",
   "url": "http://k3s-api-odysseia.com/getIt",
-  "save_trace": true
+  "host": "localhost"
 }
 
 ###

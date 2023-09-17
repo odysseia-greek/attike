@@ -1,0 +1,37 @@
+spectaql:
+  faviconFile: ./docs/favicon.png
+  displayAllServers: true
+
+introspection:
+  removeTrailingPeriodFromDescriptions: false
+  url: http://euripides.k3s-odysseia.greek/graphql
+  queryNameStrategy: capitalizeFirst
+  fieldExpansionDepth: 3
+
+info:
+  title: Euripides
+  description: Euripides is the gateway to use the trace flow for odysseia-greek
+  termsOfService: there are no TOS at this moment, use at your own risk we take no responsibility
+  contact:
+    name: odysseia-greek
+    url: https://github.com/odysseia-greek
+    email: joerivrijaldenhoven@odysseia.io
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+  x-introItems:
+    - title: Quote
+      description: κακῶς φρονοῦντες· ὡς τρὶς ἂν παρ’ ἀσπίδα στῆναι θέλοιμ’ ἂν μᾶλλον ἢ τεκεῖν ἅπαξ. - How wrong they are! I would rather stand three times with a shield in battle than give birth once.
+    - title: Links
+      description:
+        https://github.com/odysseia-greek/attike
+        https://github.com/anvilco/spectaql
+
+
+servers:
+  - url: http://euripides.k3s-odysseia.greek/graphql
+    description: k3s
+    production: false
+  - url: https://euripides.odysseia-greek.com/graphql
+    description: Production
+    production: true
