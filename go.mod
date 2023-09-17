@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/google/uuid v1.3.1
+	github.com/gorilla/mux v1.8.0
 	github.com/odysseia-greek/aristoteles v0.5.0
 	github.com/odysseia-greek/plato v0.7.4
 	github.com/stretchr/testify v1.8.4

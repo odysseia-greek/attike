@@ -1,0 +1,18 @@
+# builderTraces.graphql
+query BuildTraces($input: TraceQueryInput!) {
+    traces(input: $input) {
+        responseCode
+        items {
+            ... on Trace {
+                podName
+                operation
+            }
+            ... on Span {
+                podName
+            }
+            ... on DatabaseSpan {
+                podName
+            }
+        }
+    }
+}

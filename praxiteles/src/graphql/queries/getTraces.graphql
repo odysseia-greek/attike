@@ -1,0 +1,44 @@
+# getTraces.graphql
+query GetTraces($input: TraceQueryInput!) {
+	traces(input: $input) {
+		traceID
+		isActive
+		timeEnded
+		timeStarted
+		totalTime
+		responseCode
+		items {
+			... on Trace {
+				parentSpanID
+				method
+				url
+				host
+				remoteAddress
+				timestamp
+				podName
+				namespace
+				itemType
+				operation
+				rootQuery
+			}
+			... on Span {
+				parentSpanID
+				namespace
+				timestamp
+				podName
+				itemType
+				action
+				responseBody
+			}
+			... on DatabaseSpan {
+				parentSpanID
+				spanID
+				itemType
+				query
+				namespace
+				timestamp
+				podName
+			}
+		}
+	}
+}
