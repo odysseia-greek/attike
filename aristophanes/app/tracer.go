@@ -19,6 +19,20 @@ const (
 	ITEMS        string = "items"
 )
 
+func (t *TraceServiceImpl) HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error) {
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+		"size": 1,
+	}
+	if _, err := t.Elastic.Query().Match(t.Index, query); err != nil {
+		return nil, err
+	}
+
+	return &pb.HealthCheckResponse{Status: true}, nil
+}
+
 func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceRequest) (*pb.TraceResponse, error) {
 	traceId := uuid.New().String()
 	spanId := t.generateSpanID()
@@ -27,17 +41,21 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	t.StartTimeMap[traceId] = traceTime
 
 	trace := pb.TraceStart{
-		ParentSpanId:  spanId,
 		Method:        start.Method,
 		Url:           start.Url,
 		Host:          start.Host,
 		RemoteAddress: start.RemoteAddress,
-		Timestamp:     traceTime.Format("2006-01-02'T'15:04:05.000"),
-		PodName:       t.PodName,
-		Namespace:     t.Namespace,
-		ItemType:      TRACE,
-		Operation:     start.Operation,
-		RootQuery:     start.RootQuery,
+
+		Operation: start.Operation,
+		RootQuery: start.RootQuery,
+		Common: &pb.TraceCommon{
+			SpanId:       spanId,
+			ParentSpanId: spanId,
+			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     TRACE,
+		},
 	}
 
 	jsonData := map[string]interface{}{
@@ -70,10 +88,12 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 	traceTime := time.Now().UTC()
 
 	trace := pb.TraceStop{
-		ParentSpanId: stop.ParentSpanId,
-		Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
-		PodName:      t.PodName,
-		Namespace:    t.Namespace,
+		Common: &pb.TraceCommon{
+			ParentSpanId: stop.ParentSpanId,
+			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+		},
 	}
 
 	if stop.ResponseBody != "" {
@@ -137,15 +157,17 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 	spanId := t.generateSpanID()
 
 	trace := pb.Trace{
-		SpanId:       spanId,
-		ParentSpanId: traceRequest.ParentSpanId,
-		Method:       traceRequest.Method,
-		Url:          traceRequest.Url,
-		Host:         traceRequest.Host,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-		PodName:      t.PodName,
-		Namespace:    t.Namespace,
-		ItemType:     TRACE,
+		Method: traceRequest.Method,
+		Url:    traceRequest.Url,
+		Host:   traceRequest.Host,
+		Common: &pb.TraceCommon{
+			SpanId:       spanId,
+			ParentSpanId: traceRequest.ParentSpanId,
+			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     TRACE,
+		},
 	}
 	data, err := json.Marshal(&trace)
 	if err != nil {
@@ -169,15 +191,17 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 	spanId := t.generateSpanID()
 
 	span := pb.Span{
-		SpanId:       spanId,
-		ParentSpanId: spanRequest.ParentSpanId,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-		PodName:      t.PodName,
-		Namespace:    t.Namespace,
 		Action:       spanRequest.Action,
 		RequestBody:  spanRequest.RequestBody,
 		ResponseBody: spanRequest.ResponseBody,
-		ItemType:     SPAN,
+		Common: &pb.TraceCommon{
+			SpanId:       spanId,
+			ParentSpanId: spanRequest.ParentSpanId,
+			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     SPAN,
+		},
 	}
 
 	data, err := json.Marshal(&span)
@@ -202,14 +226,16 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 	spanId := t.generateSpanID()
 
 	span := pb.DatabaseSpan{
-		SpanId:       spanId,
-		ParentSpanId: spanRequest.ParentSpanId,
-		Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-		PodName:      t.PodName,
-		Namespace:    t.Namespace,
-		Query:        spanRequest.Query,
-		ResultJson:   spanRequest.ResultJson,
-		ItemType:     DATABASESPAN,
+		Query:      spanRequest.Query,
+		ResultJson: spanRequest.ResultJson,
+		Common: &pb.TraceCommon{
+			SpanId:       spanId,
+			ParentSpanId: spanRequest.ParentSpanId,
+			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     DATABASESPAN,
+		},
 	}
 
 	data, err := json.Marshal(&span)

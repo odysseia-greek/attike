@@ -22,12 +22,19 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceServiceClient interface {
+	// Start a new trace.
 	StartTrace(ctx context.Context, in *StartTraceRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	// Record a new trace within an existing trace.
 	Trace(ctx context.Context, in *TraceRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	// Start a new span within an existing trace.
 	StartNewSpan(ctx context.Context, in *StartSpanRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	// Record a span with details of an action performed.
 	Span(ctx context.Context, in *SpanRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	// Record a span related to a database query.
 	DatabaseSpan(ctx context.Context, in *DatabaseSpanRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	// Close an existing trace.
 	CloseTrace(ctx context.Context, in *CloseTraceRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	HealthCheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error)
 }
 
 type traceServiceClient struct {
@@ -92,16 +99,32 @@ func (c *traceServiceClient) CloseTrace(ctx context.Context, in *CloseTraceReque
 	return out, nil
 }
 
+func (c *traceServiceClient) HealthCheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error) {
+	out := new(HealthCheckResponse)
+	err := c.cc.Invoke(ctx, "/proto.TraceService/HealthCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TraceServiceServer is the server API for TraceService service.
 // All implementations must embed UnimplementedTraceServiceServer
 // for forward compatibility
 type TraceServiceServer interface {
+	// Start a new trace.
 	StartTrace(context.Context, *StartTraceRequest) (*TraceResponse, error)
+	// Record a new trace within an existing trace.
 	Trace(context.Context, *TraceRequest) (*TraceResponse, error)
+	// Start a new span within an existing trace.
 	StartNewSpan(context.Context, *StartSpanRequest) (*TraceResponse, error)
+	// Record a span with details of an action performed.
 	Span(context.Context, *SpanRequest) (*TraceResponse, error)
+	// Record a span related to a database query.
 	DatabaseSpan(context.Context, *DatabaseSpanRequest) (*TraceResponse, error)
+	// Close an existing trace.
 	CloseTrace(context.Context, *CloseTraceRequest) (*TraceResponse, error)
+	HealthCheck(context.Context, *Empty) (*HealthCheckResponse, error)
 	mustEmbedUnimplementedTraceServiceServer()
 }
 
@@ -126,6 +149,9 @@ func (UnimplementedTraceServiceServer) DatabaseSpan(context.Context, *DatabaseSp
 }
 func (UnimplementedTraceServiceServer) CloseTrace(context.Context, *CloseTraceRequest) (*TraceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CloseTrace not implemented")
+}
+func (UnimplementedTraceServiceServer) HealthCheck(context.Context, *Empty) (*HealthCheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
 }
 func (UnimplementedTraceServiceServer) mustEmbedUnimplementedTraceServiceServer() {}
 
@@ -248,6 +274,24 @@ func _TraceService_CloseTrace_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TraceService_HealthCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceServiceServer).HealthCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.TraceService/HealthCheck",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceServiceServer).HealthCheck(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TraceService_ServiceDesc is the grpc.ServiceDesc for TraceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -278,6 +322,10 @@ var TraceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CloseTrace",
 			Handler:    _TraceService_CloseTrace_Handler,
+		},
+		{
+			MethodName: "HealthCheck",
+			Handler:    _TraceService_HealthCheck_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

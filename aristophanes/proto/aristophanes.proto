@@ -72,8 +72,11 @@ service TraceService {
 
   // Close an existing trace.
   rpc CloseTrace(CloseTraceRequest) returns (TraceResponse);
+
+  rpc HealthCheck(Empty) returns (HealthCheckResponse);
 }
 
+message Empty {}
 
 message StartTraceRequest {
   string method = 1; // GET POST PUT, etc.
@@ -121,4 +124,8 @@ message TraceRequest {
   string method = 3; // GET POST PUT, etc.
   string url = 4; // The URL called by a client
   string host = 5; // The host that generated the trace
+}
+
+message HealthCheckResponse {
+  bool status = 1;
 }
