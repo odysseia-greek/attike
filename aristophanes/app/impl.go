@@ -10,12 +10,14 @@ import (
 )
 
 type TraceService interface {
+	HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error)
 	StartTrace(ctx context.Context, request *pb.StartTraceRequest) (*pb.TraceResponse, error)
 	Trace(ctx context.Context, request *pb.TraceRequest) (*pb.TraceResponse, error)
 	StartNewSpan(ctx context.Context, request *pb.StartSpanRequest) (*pb.TraceResponse, error)
 	Span(ctx context.Context, request *pb.SpanRequest) (*pb.TraceResponse, error)
 	DatabaseSpan(ctx context.Context, request *pb.DatabaseSpanRequest) (*pb.TraceResponse, error)
 	CloseTrace(ctx context.Context, request *pb.CloseTraceRequest) (*pb.TraceResponse, error)
+	WaitForHealthyState() bool
 }
 
 type TraceServiceImpl struct {
@@ -41,6 +43,27 @@ func NewClientTracer() *ClientTracer {
 	conn, _ := grpc.Dial(DefaultAddress, grpc.WithInsecure())
 	client := pb.NewTraceServiceClient(conn)
 	return &ClientTracer{tracer: client}
+}
+
+func (c *ClientTracer) WaitForHealthyState() bool {
+	timeout := 30 * time.Second
+	checkInterval := 1 * time.Second
+	endTime := time.Now().Add(timeout)
+
+	for time.Now().Before(endTime) {
+		response, err := c.HealthCheck(context.Background(), &pb.Empty{})
+		if err == nil && response.Status {
+			return true
+		}
+
+		time.Sleep(checkInterval)
+	}
+
+	return false
+}
+
+func (c *ClientTracer) HealthCheck(ctx context.Context, request *pb.Empty) (*pb.HealthCheckResponse, error) {
+	return c.tracer.HealthCheck(ctx, request)
 }
 
 func (c *ClientTracer) StartTrace(ctx context.Context, request *pb.StartTraceRequest) (*pb.TraceResponse, error) {
