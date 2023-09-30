@@ -57,3 +57,6 @@ GRPC localhost:50052/proto.TraceService/DatabaseSpan
   "query": "{ \"size\": 1, \"query\": { \"multi_match\": { \"query\": \"μάχη\", \"type\": \"bool_prefix\", \"fields\": [ \"greek\", \"greek._2gram\", \"greek._3gram\" ] } } }",
   "result_json": "{\"took\": 12, \"timed_out\": false, \"_shards\": { \"total\": 1, \"successful\": 1, \"skipped\": 0, \"failed\": 0 }, \"hits\": { \"total\": { \"value\": 158, \"relation\": \"eq\" }, \"max_score\": 53.79459, \"hits\": [ { \"_index\": \"dictionary\", \"_id\": \"AyML9IkBiMW0F27kxLqL\", \"_score\": 53.79459, \"_source\": { \"greek\": \"μάχη\", \"english\": \"battle, fight, combat\", \"original\": \"μάχη\" } } ] } }"
 }
+
+###
+GRPC localhost:50052/proto.TraceService/HealthCheck

@@ -20,17 +20,8 @@ const (
 )
 
 func (t *TraceServiceImpl) HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error) {
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match_all": map[string]interface{}{},
-		},
-		"size": 1,
-	}
-	if _, err := t.Elastic.Query().Match(t.Index, query); err != nil {
-		return nil, err
-	}
-
-	return &pb.HealthCheckResponse{Status: true}, nil
+	elasticHealth := t.Elastic.Health().Info()
+	return &pb.HealthCheckResponse{Status: elasticHealth.Healthy}, nil
 }
 
 func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceRequest) (*pb.TraceResponse, error) {
