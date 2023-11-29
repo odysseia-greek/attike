@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"github.com/odysseia-greek/aristoteles"
-	"github.com/odysseia-greek/aristoteles/models"
-	"github.com/odysseia-greek/plato/config"
+	"github.com/odysseia-greek/agora/aristoteles"
+	"github.com/odysseia-greek/agora/aristoteles/models"
+	"github.com/odysseia-greek/agora/plato/config"
+	"github.com/odysseia-greek/olympia/eratosthenes"
 	"log"
 )
 
@@ -42,7 +43,7 @@ func CreateNewConfig(env string) (*EuripidesHandler, error) {
 	var cfg models.Config
 
 	if healthCheck {
-		vaultConfig, err := config.ConfigFromVault()
+		vaultConfig, err := eratosthenes.ConfigFromVault()
 		if err != nil {
 			log.Print(err)
 			return nil, err

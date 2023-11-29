@@ -3,10 +3,10 @@ package app
 import (
 	"github.com/gorilla/mux"
 	"github.com/graphql-go/handler"
+	plato "github.com/odysseia-greek/agora/plato/middleware"
 	"github.com/odysseia-greek/attike/euripides/handlers"
 	"github.com/odysseia-greek/attike/euripides/middleware"
 	"github.com/odysseia-greek/attike/euripides/schemas"
-	plato "github.com/odysseia-greek/plato/middleware"
 )
 
 // InitRoutes to start up a mux router and return the routes
@@ -19,7 +19,7 @@ func InitRoutes() *mux.Router {
 		GraphiQL: false,
 	})
 
-	serveMux.HandleFunc("/homeros/v1/health", plato.Adapt(handlers.Health, plato.ValidateRestMethod("GET"), plato.SetCorsHeaders()))
+	serveMux.HandleFunc("/euripides/v1/health", plato.Adapt(handlers.Health, plato.ValidateRestMethod("GET"), plato.SetCorsHeaders()))
 	serveMux.Handle("/graphql", middleware.Adapt(srv, middleware.SetCorsHeaders()))
 
 	return serveMux

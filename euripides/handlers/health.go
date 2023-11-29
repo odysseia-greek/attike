@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/odysseia-greek/plato/middleware"
-	"github.com/odysseia-greek/plato/models"
+	"github.com/odysseia-greek/agora/plato/middleware"
+	"github.com/odysseia-greek/agora/plato/models"
 	"net/http"
 	"time"
 )

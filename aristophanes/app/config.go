@@ -1,9 +1,9 @@
 package app
 
 import (
-	"github.com/odysseia-greek/aristoteles"
-	"github.com/odysseia-greek/aristoteles/models"
-	"github.com/odysseia-greek/plato/config"
+	"github.com/odysseia-greek/agora/aristoteles"
+	"github.com/odysseia-greek/agora/aristoteles/models"
+	"github.com/odysseia-greek/agora/plato/config"
 	"os"
 	"time"
 )
