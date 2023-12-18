@@ -2,7 +2,7 @@ package comedy
 
 import (
 	"context"
-	"github.com/odysseia-greek/aristoteles"
+	"github.com/odysseia-greek/agora/aristoteles"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	"google.golang.org/grpc"
 	"sync"

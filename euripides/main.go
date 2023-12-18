@@ -1,9 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"github.com/odysseia-greek/agora/plato/logging"
 	"github.com/odysseia-greek/attike/euripides/schemas"
 	"github.com/odysseia-greek/attike/euripides/tragedy"
-	"log"
 	"net/http"
 	"os"
 )
@@ -12,7 +13,7 @@ const standardPort = ":8080"
 
 func main() {
 
-	log.Print(`
+	logging.System(`
    ___  __ __  ____   ____  ____ ____  ___      ___  _____
   /  _]|  |  ||    \ |    ||    \    ||   \    /  _]/ ___/
  /  [_ |  |  ||  D  ) |  | |  o  )  | |    \  /  [_(   \_ 
@@ -22,9 +23,9 @@ func main() {
 |_____| \__,_||__|\_||____||__| |____||_____||_____| \___|
                                                           
 `)
-	log.Print(`	κακῶς φρονοῦντες· ὡς τρὶς ἂν παρ’ ἀσπίδα στῆναι θέλοιμ’ ἂν μᾶλλον ἢ τεκεῖν ἅπαξ.`)
-	log.Print("How wrong they are! I would rather stand three times with a shield in battle than give birth once.\n")
-	log.Print("Starting up...")
+	logging.System(`	κακῶς φρονοῦντες· ὡς τρὶς ἂν παρ’ ἀσπίδα στῆναι θέλοιμ’ ἂν μᾶλλον ἢ τεκεῖν ἅπαξ.`)
+	logging.System("How wrong they are! I would rather stand three times with a shield in battle than give birth once.\n")
+	logging.System("Starting up...")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -35,7 +36,7 @@ func main() {
 	schemas.InitEuripidesHandler()
 	srv := tragedy.InitRoutes()
 
-	log.Printf("%s : %s", "running on port", port)
+	logging.System(fmt.Sprintf("%s : %s", "running on port", port))
 	err := http.ListenAndServe(port, srv)
 	if err != nil {
 		panic(err)

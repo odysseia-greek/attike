@@ -1,10 +1,11 @@
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: odysseia
+deploy:
+  kubeContext: k3d-odysseia
+  tolerateFailuresUntilDeadline: true
 build:
-  tagPolicy:
-    sha256: { }
   local:
     push: false
   artifacts:
@@ -16,9 +17,7 @@ build:
         manual:
           - src: '**/*.go'
             dest: '/app'
-deploy:
-  kubeContext: k3d-odysseia
-  tolerateFailuresUntilDeadline: true
+
 manifests:
   rawYaml:
     - aristophanes/infra/manifest.yaml

@@ -21,7 +21,6 @@ RUN go install github.com/cosmtrek/air@latest
  # Install Delve for debugging
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 EXPOSE 2345
-EXPOSE 5000
 CMD ["air", "-c", ".air.toml"]
 
 # Build binary with Go

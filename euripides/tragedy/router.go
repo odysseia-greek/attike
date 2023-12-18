@@ -3,10 +3,10 @@ package tragedy
 import (
 	"github.com/gorilla/mux"
 	"github.com/graphql-go/handler"
+	plato "github.com/odysseia-greek/agora/plato/middleware"
 	"github.com/odysseia-greek/attike/euripides/handlers"
 	"github.com/odysseia-greek/attike/euripides/middleware"
 	"github.com/odysseia-greek/attike/euripides/schemas"
-	plato "github.com/odysseia-greek/plato/middleware"
 )
 
 // InitRoutes to start up a mux router and return the routes

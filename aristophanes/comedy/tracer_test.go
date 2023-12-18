@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/google/uuid"
-	"github.com/odysseia-greek/aristoteles"
+	"github.com/odysseia-greek/agora/aristoteles"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	"github.com/stretchr/testify/assert"
 	"regexp"

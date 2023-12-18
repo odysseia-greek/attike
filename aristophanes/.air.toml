@@ -1,7 +1,7 @@
 root = "/app"
 
 [build]
-cmd = 'go build -gcflags "all=-N -l" github.com/odysseia-greek/olympia/aristophanes .'
+cmd = 'go build -gcflags "all=-N -l" github.com/odysseia-greek/attike/aristophanes .'
 bin = "/app/alexandros"
 full_bin = "dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec /app/aristophanes"
 watch = ["./..."]

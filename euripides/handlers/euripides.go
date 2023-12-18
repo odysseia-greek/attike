@@ -3,8 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/odysseia-greek/aristoteles"
-	elasticModels "github.com/odysseia-greek/aristoteles/models"
+	"github.com/odysseia-greek/agora/aristoteles"
+	elasticModels "github.com/odysseia-greek/agora/aristoteles/models"
 	"log"
 )
 
