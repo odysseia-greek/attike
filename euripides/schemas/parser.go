@@ -1,6 +1,6 @@
 package schemas
 
-import "github.com/odysseia-greek/aristoteles/models"
+import "github.com/odysseia-greek/agora/aristoteles/models"
 
 func parseHitsToGraphql(hits *models.Hits) []TraceObject {
 	var traces []TraceObject

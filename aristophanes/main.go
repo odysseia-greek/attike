@@ -1,7 +1,9 @@
 package main
 
 import (
-	"github.com/odysseia-greek/attike/aristophanes/app"
+	"fmt"
+	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/attike/aristophanes/comedy"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	"google.golang.org/grpc"
 	"log"
@@ -18,7 +20,7 @@ func main() {
 	}
 
 	// https://patorjk.com/software/taag/#p=display&f=Crawford2&t=ARISTOPHANES
-	log.Print(`
+	logging.System(`
   ____  ____   ____ _____ ______   ___   ____  __ __   ____  ____     ___  _____
  /    ||    \ |    / ___/|      | /   \ |    \|  |  | /    ||    \   /  _]/ ___/
 |  o  ||  D  ) |  (   \_ |      ||     ||  o  )  |  ||  o  ||  _  | /  [_(   \_ 
@@ -28,14 +30,14 @@ func main() {
 |__|__||__|\_||____|\___|  |__|   \___/ |__|  |__|__||__|__||__|__||_____| \___|
 	`)
 
-	log.Print("βρεκεκεκὲξ κοὰξ κοάξ.τούτῳ γὰρ οὐ νικήσετε.")
-	log.Print("Brekekekex koax koax. You never beat me in this play!")
-	log.Print("Starting up...")
+	logging.System("βρεκεκεκὲξ κοὰξ κοάξ.τούτῳ γὰρ οὐ νικήσετε.")
+	logging.System("Brekekekex koax koax. You never beat me in this play!")
+	logging.System("Starting up...")
 
 	env := os.Getenv("ENV")
 
 	// Create the TraceServiceClient using the environment
-	traceClient, err := app.NewTraceServiceImpl(env)
+	traceClient, err := comedy.NewTraceServiceImpl(env)
 	if err != nil {
 		log.Fatalf("error creating TraceServiceClient: %v", err)
 	}
@@ -51,7 +53,7 @@ func main() {
 
 	pb.RegisterTraceServiceServer(server, traceClient)
 
-	log.Printf("Server listening on %s", port)
+	logging.System(fmt.Sprintf("Server listening on %s", port))
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

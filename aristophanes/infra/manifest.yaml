@@ -1,0 +1,74 @@
+---
+ # Source: aristophanes/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: aristophanes-dev
+ namespace: odysseia
+ labels:
+   app: aristophanes-dev
+spec:
+ replicas: 1
+ selector:
+   matchLabels:
+     app: aristophanes-dev
+ template:
+   metadata:
+     labels:
+       app: aristophanes-dev
+   spec:
+     containers:
+       - name: "aristophanes"
+         image: ghcr.io/odysseia-greek/aristophanes:v0.0.11
+         env:
+           - name: POD_NAME
+             valueFrom:
+               fieldRef:
+                 fieldPath: metadata.name
+           - name: NAMESPACE
+             valueFrom:
+               fieldRef:
+                 fieldPath: metadata.namespace
+           - name: ELASTIC_SEARCH_USER
+             valueFrom:
+               secretKeyRef:
+                 name: agreus-elastic
+                 key: user
+           - name: ELASTIC_SEARCH_PASSWORD
+             valueFrom:
+               secretKeyRef:
+                 name: agreus-elastic
+                 key: password
+         envFrom:
+           - configMapRef:
+               name: alexandros
+         imagePullPolicy: Never
+         volumeMounts:
+           - name: elastic-internal-tls
+             mountPath: /app/config/elastic
+             readOnly: true
+         ports:
+           - containerPort: 50052
+             name: grpc
+           - containerPort: 2345
+             name: delve
+     volumes:
+       - name: elastic-internal-tls
+         secret:
+           secretName: aristoteles-es-http-certs-public
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aristophanes-dev
+spec:
+  ports:
+    - port: 50052
+      name: grpc
+      targetPort: grpc
+    - port: 2345
+      name: delve
+      targetPort: delve
+  selector:
+    app: aristophanes-dev
