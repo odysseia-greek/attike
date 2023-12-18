@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/odysseia-greek/attike/euripides/app"
 	"github.com/odysseia-greek/attike/euripides/schemas"
+	"github.com/odysseia-greek/attike/euripides/tragedy"
 	"log"
 	"net/http"
 	"os"
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	schemas.InitEuripidesHandler()
-	srv := app.InitRoutes()
+	srv := tragedy.InitRoutes()
 
 	log.Printf("%s : %s", "running on port", port)
 	err := http.ListenAndServe(port, srv)

@@ -3,11 +3,11 @@ module github.com/odysseia-greek/attike/euripides
 go 1.20
 
 require (
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/graphql-go/graphql v0.8.1
 	github.com/graphql-go/handler v0.2.3
-	github.com/odysseia-greek/aristoteles v0.5.0
-	github.com/odysseia-greek/plato v0.7.5
+	github.com/odysseia-greek/aristoteles v0.6.0
+	github.com/odysseia-greek/plato v0.7.6
 	github.com/stretchr/testify v1.8.4
 )
 

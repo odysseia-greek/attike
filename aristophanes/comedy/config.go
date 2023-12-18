@@ -1,4 +1,4 @@
-package app
+package comedy
 
 import (
 	"github.com/odysseia-greek/aristoteles"
