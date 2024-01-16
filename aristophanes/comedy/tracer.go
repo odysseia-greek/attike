@@ -36,9 +36,8 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 		Url:           start.Url,
 		Host:          start.Host,
 		RemoteAddress: start.RemoteAddress,
-
-		Operation: start.Operation,
-		RootQuery: start.RootQuery,
+		Operation:     start.Operation,
+		RootQuery:     start.RootQuery,
 		Common: &pb.TraceCommon{
 			SpanId:       spanId,
 			ParentSpanId: spanId,
@@ -165,6 +164,8 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 		return nil, err
 	}
 
+	// if this update fails the id might not yet exists. Perhaps its best to verify and if it doesnt exist start a trace here
+	// else it will error out leading to difficult debug situations
 	docID, err := t.UpdateDocumentWithRetry(traceRequest.TraceId, ITEMS, data)
 	if err != nil {
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
