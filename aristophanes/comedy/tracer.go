@@ -29,6 +29,7 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	spanId := t.generateSpanID()
 
 	traceTime := time.Now().UTC()
+	// there seems to be a concurrent write here at times
 	t.StartTimeMap[traceId] = traceTime
 
 	trace := pb.TraceStart{
@@ -36,9 +37,8 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 		Url:           start.Url,
 		Host:          start.Host,
 		RemoteAddress: start.RemoteAddress,
-
-		Operation: start.Operation,
-		RootQuery: start.RootQuery,
+		Operation:     start.Operation,
+		RootQuery:     start.RootQuery,
 		Common: &pb.TraceCommon{
 			SpanId:       spanId,
 			ParentSpanId: spanId,
@@ -126,7 +126,7 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	// Remove the entry from the map
+	// Remove the entry from the map perhaps there is a concurrent write to map here.
 	delete(t.StartTimeMap, doc.ID)
 
 	log.Printf("closed trace with id: %s", doc.ID)
@@ -165,6 +165,8 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 		return nil, err
 	}
 
+	// if this update fails the id might not yet exists. Perhaps its best to verify and if it doesnt exist start a trace here
+	// else it will error out leading to difficult debug situations
 	docID, err := t.UpdateDocumentWithRetry(traceRequest.TraceId, ITEMS, data)
 	if err != nil {
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
