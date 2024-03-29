@@ -7,6 +7,8 @@
     - [CloseTraceRequest](#proto-CloseTraceRequest)
     - [DatabaseSpan](#proto-DatabaseSpan)
     - [DatabaseSpanRequest](#proto-DatabaseSpanRequest)
+    - [Empty](#proto-Empty)
+    - [HealthCheckResponse](#proto-HealthCheckResponse)
     - [Span](#proto-Span)
     - [SpanRequest](#proto-SpanRequest)
     - [StartSpanRequest](#proto-StartSpanRequest)
@@ -79,6 +81,31 @@
 | action | [string](#string) |  | Action performed in the span |
 | query | [string](#string) |  | Database query statement |
 | result_json | [string](#string) |  | Query result data as JSON string |
+
+
+
+
+
+
+<a name="proto-Empty"></a>
+
+### Empty
+
+
+
+
+
+
+
+<a name="proto-HealthCheckResponse"></a>
+
+### HealthCheckResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [bool](#bool) |  |  |
 
 
 
@@ -285,6 +312,7 @@ The TraceService service provides operations for managing and tracking traces an
 | Span | [SpanRequest](#proto-SpanRequest) | [TraceResponse](#proto-TraceResponse) | Record a span with details of an action performed. |
 | DatabaseSpan | [DatabaseSpanRequest](#proto-DatabaseSpanRequest) | [TraceResponse](#proto-TraceResponse) | Record a span related to a database query. |
 | CloseTrace | [CloseTraceRequest](#proto-CloseTraceRequest) | [TraceResponse](#proto-TraceResponse) | Close an existing trace. |
+| HealthCheck | [Empty](#proto-Empty) | [HealthCheckResponse](#proto-HealthCheckResponse) |  |
 
  
 

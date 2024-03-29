@@ -29,6 +29,7 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	spanId := t.generateSpanID()
 
 	traceTime := time.Now().UTC()
+	// there seems to be a concurrent write here at times
 	t.StartTimeMap[traceId] = traceTime
 
 	trace := pb.TraceStart{
@@ -125,7 +126,7 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	// Remove the entry from the map
+	// Remove the entry from the map perhaps there is a concurrent write to map here.
 	delete(t.StartTimeMap, doc.ID)
 
 	log.Printf("closed trace with id: %s", doc.ID)
