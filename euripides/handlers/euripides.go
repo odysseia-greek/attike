@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/odysseia-greek/agora/aristoteles"
 	elasticModels "github.com/odysseia-greek/agora/aristoteles/models"
-	"log"
+	"github.com/odysseia-greek/agora/plato/logging"
 )
 
 type EuripidesHandler struct {
@@ -27,7 +27,7 @@ func (e *EuripidesHandler) Tracing(input map[string]interface{}) (*elasticModels
 	}
 
 	jsonQuery, _ := json.Marshal(query)
-	log.Print(string(jsonQuery))
+	logging.Debug(string(jsonQuery))
 	response, err := e.Elastic.Query().MatchWithScroll(e.Index, query)
 	if err != nil {
 		return nil, err
@@ -108,7 +108,7 @@ func (e *EuripidesHandler) filterInputToQuery(input map[string]interface{}) (map
 			// Create a wildcard filter for "items.pod_name"
 			podNameFilter = map[string]interface{}{
 				"wildcard": map[string]interface{}{
-					"items.pod_name": fmt.Sprintf("%s*", podName),
+					"items.common.pod_name.keyword": fmt.Sprintf("%s*", podName),
 				},
 			}
 		}

@@ -15,73 +15,85 @@ func parseHitsToGraphql(hits *models.Hits) []TraceObject {
 			IsActive:     getBoolFromSource(hit.Source, "isActive"),
 		}
 
-		sourceItems, ok := hit.Source["items"].([]map[string]interface{})
+		sourceItems := make([]map[string]interface{}, 0)
+		sources, ok := hit.Source["items"].([]interface{})
 		if !ok {
-			return traces
+			continue
+		} else {
+			for _, item := range sources {
+				itemMap, ok := item.(map[string]interface{})
+				if !ok {
+					continue
+				} else {
+					sourceItems = append(sourceItems, itemMap)
+				}
+			}
 		}
 
 		var graphqlObjects []interface{}
 
 		for _, item := range sourceItems {
-			if itemType, exists := item["item_type"].(string); exists {
+			if common, exists := item["common"].(map[string]interface{}); exists {
+				if itemType, exists := common["item_type"].(string); exists {
+					switch itemType {
+					case "trace":
+						var trace Trace
+						trace.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						trace.Method = getStringFromMap(item, "method")
+						trace.URL = getStringFromMap(item, "url")
+						trace.Host = getStringFromMap(item, "host")
+						trace.RemoteAddress = getStringFromMap(item, "remote_address")
+						trace.Operation = getStringFromMap(item, "operation")
+						trace.RootQuery = getStringFromMap(item, "root_query")
+						trace.Timestamp = getStringFromMap(common, "timestamp")
+						trace.PodName = getStringFromMap(common, "pod_name")
+						trace.Namespace = getStringFromMap(common, "namespace")
+						trace.ItemType = itemType
+						graphqlObjects = append(graphqlObjects, &trace)
 
-				switch itemType {
-				case "trace":
-					var trace Trace
-					trace.ParentSpanID = getStringFromMap(item, "parent_span_id")
-					trace.Method = getStringFromMap(item, "method")
-					trace.URL = getStringFromMap(item, "url")
-					trace.Host = getStringFromMap(item, "host")
-					trace.RemoteAddress = getStringFromMap(item, "remote_address")
-					trace.Timestamp = getStringFromMap(item, "timestamp")
-					trace.PodName = getStringFromMap(item, "pod_name")
-					trace.Namespace = getStringFromMap(item, "namespace")
-					trace.ItemType = itemType
-					trace.Operation = getStringFromMap(item, "operation")
-					trace.RootQuery = getStringFromMap(item, "root_query")
-					graphqlObjects = append(graphqlObjects, &trace)
+					case "span":
+						var span Span
+						span.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						span.Namespace = getStringFromMap(common, "namespace")
+						span.Timestamp = getStringFromMap(common, "timestamp")
+						span.PodName = getStringFromMap(common, "pod_name")
+						span.ItemType = itemType
+						span.Action = getStringFromMap(item, "action")
+						span.ResponseBody = getStringFromMap(item, "response_body")
+						graphqlObjects = append(graphqlObjects, &span)
 
-				case "span":
+					case "database_span":
+						var dbSpan DatabaseSpan
+						dbSpan.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						dbSpan.ResultJSON = getStringFromMap(item, "result_json")
+						dbSpan.SpanID = getStringFromMap(common, "span_id")
+						dbSpan.ItemType = itemType
+						dbSpan.Query = getStringFromMap(item, "query")
+						dbSpan.Namespace = getStringFromMap(common, "namespace")
+						dbSpan.Timestamp = getStringFromMap(common, "timestamp")
+						dbSpan.PodName = getStringFromMap(common, "pod_name")
+						graphqlObjects = append(graphqlObjects, &dbSpan)
+
+					default:
+						// Handle unknown item types or ignore them.
+					}
+				} else {
+					// "item_type" is missing, treat as a "closer" or parse as a Span.
 					var span Span
-					span.ParentSpanID = getStringFromMap(item, "parent_span_id")
-					span.Namespace = getStringFromMap(item, "namespace")
-					span.Timestamp = getStringFromMap(item, "timestamp")
-					span.PodName = getStringFromMap(item, "pod_name")
-					span.ItemType = itemType
+					span.ParentSpanID = getStringFromMap(common, "parent_span_id")
+					span.Namespace = getStringFromMap(common, "namespace")
+					span.Timestamp = getStringFromMap(common, "timestamp")
+					span.PodName = getStringFromMap(common, "pod_name")
+					span.ItemType = "trace"
+					span.ResponseBody = getStringFromMap(item, "response_body")
 					span.Action = getStringFromMap(item, "action")
 					graphqlObjects = append(graphqlObjects, &span)
-
-				case "database_span":
-					var dbSpan DatabaseSpan
-					dbSpan.ParentSpanID = getStringFromMap(item, "parent_span_id")
-					dbSpan.ResultJSON = getStringFromMap(item, "result_json")
-					dbSpan.SpanID = getStringFromMap(item, "span_id")
-					dbSpan.ItemType = itemType
-					dbSpan.Query = getStringFromMap(item, "query")
-					dbSpan.Namespace = getStringFromMap(item, "namespace")
-					dbSpan.Timestamp = getStringFromMap(item, "timestamp")
-					dbSpan.PodName = getStringFromMap(item, "pod_name")
-					graphqlObjects = append(graphqlObjects, &dbSpan)
-
-				default:
-					// Handle unknown item types or ignore them.
 				}
-			} else {
-				// "item_type" is missing, treat as a "closer" or parse as a Span.
-				var span Span
-				span.ParentSpanID = getStringFromMap(item, "parent_span_id")
-				span.Namespace = getStringFromMap(item, "namespace")
-				span.Timestamp = getStringFromMap(item, "timestamp")
-				span.PodName = getStringFromMap(item, "pod_name")
-				span.ItemType = "trace"
-				span.ResponseBody = getStringFromMap(item, "response_body")
-				graphqlObjects = append(graphqlObjects, &span)
 			}
 		}
 		innerObject.Items = graphqlObjects
 		traces = append(traces, innerObject)
 	}
-
 	return traces
 }
 

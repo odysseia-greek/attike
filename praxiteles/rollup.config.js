@@ -8,11 +8,8 @@ import css from 'rollup-plugin-css-only';
 import graphql from '@rollup/plugin-graphql'; // Use the new plugin
 import json from '@rollup/plugin-json'
 import replace from '@rollup/plugin-replace';
-import dotenv from 'dotenv';
 
 const production = !process.env.ROLLUP_WATCH;
-// Load environment variables from .env
-dotenv.config();
 
 function serve() {
 	let server;
@@ -35,13 +32,14 @@ function serve() {
 	};
 }
 
+
 export default {
 	input: 'src/main.js',
 	output: {
 		sourcemap: true,
-		format: 'iife',
+		format: 'esm', // Changed from 'iife' to 'esm'
 		name: 'app',
-		file: 'public/build/bundle.js'
+		dir: 'public/build' // Changed from 'file' to 'dir' for ES module output
 	},
 	plugins: [
 		svelte({
@@ -70,8 +68,7 @@ export default {
 
 		replace({
 			preventAssignment: true, // This prevents Rollup from trying to rewrite imports
-			'process.env.GRAPHQL_URL': JSON.stringify(process.env.GRAPHQL_URL),
-			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+			'process.env.ENV': JSON.stringify(process.env.ENV),
 		}),
 
 
@@ -89,5 +86,13 @@ export default {
 	],
 	watch: {
 		clearScreen: false
+	},
+	onwarn(warning, warn) {
+		// Ignore certain types of warnings or warnings from specific modules
+		if (warning.code === 'CIRCULAR_DEPENDENCY' && /node_modules/.test(warning.message)) {
+			return;
+		}
+		// For all other warnings, use the default Rollup warning handler
+		warn(warning);
 	}
 };

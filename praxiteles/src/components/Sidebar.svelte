@@ -76,7 +76,7 @@
         <span class="menu-icon"><Fa icon={faBinoculars} /></span>
         <span class={isSidebarOpen ? "text-expanded" : "icon-collapsed"}>Traces</span>
     </a>
-    <a href="#metrics" class="menu-item">
+    <a href="#visual" class="menu-item">
         <span class="menu-icon"><Fa icon={faAreaChart} /></span>
         <span class={isSidebarOpen ? "text-expanded" : "icon-collapsed"}>Metrics</span>
     </a>
