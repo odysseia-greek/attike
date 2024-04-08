@@ -204,7 +204,7 @@ func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequ
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	logging.Debug(fmt.Sprintf("started span with id: %s adn parentId: %s to trace: %s", spanId, stop.ParentSpanId, docID))
+	logging.Debug(fmt.Sprintf("closed span with id: %s adn parentId: %s to trace: %s", stop.SpanId, stop.ParentSpanId, docID))
 
 	return &pb.TraceResponse{
 		CombinedId: stop.TraceId,
