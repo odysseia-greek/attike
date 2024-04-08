@@ -190,10 +190,6 @@ func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequ
 		},
 	}
 
-	if stop.ResponseBody != "" {
-		span.ResponseBody = stop.ResponseBody
-	}
-
 	data, err := json.Marshal(&span)
 	if err != nil {
 		return nil, err
@@ -292,9 +288,10 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 
 	span := pb.DatabaseSpan{
 		Query:        spanRequest.Query,
-		ResultJson:   spanRequest.ResultJson,
 		TimeStarted:  timeStartedStr,
 		TimeFinished: timeEndedStr,
+		Hits:         spanRequest.Hits,
+		Took:         fmt.Sprintf("%vms", spanRequest.TimeTook),
 		Common: &pb.TraceCommon{
 			SpanId:       spanId,
 			ParentSpanId: spanRequest.ParentSpanId,
