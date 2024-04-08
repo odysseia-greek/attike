@@ -101,8 +101,6 @@ github.com/odysseia-greek/agora/diogenes v0.1.4 h1:zaii31bCdRSuraRJyi1bHOAkX64an
 github.com/odysseia-greek/agora/diogenes v0.1.4/go.mod h1:nd8HWflnhxPqX/nfxbP3oZUt9bZvcIp27m5w4+jO3Yw=
 github.com/odysseia-greek/agora/plato v0.1.14 h1:Dr9iijoDsG5aUIR5YTsbR6tJKnvbg12xY0wr12Q8kfo=
 github.com/odysseia-greek/agora/plato v0.1.14/go.mod h1:8HAbEc1qo3ixs4KlbwRmgzsXyPbkX7RAwTxdUFZpiCU=
-github.com/odysseia-greek/aristoteles v0.6.0 h1:qzq621ec+p4ZzjNi97TmFYL4m1mIiSv5/UsjA+2TpMU=
-github.com/odysseia-greek/aristoteles v0.6.0/go.mod h1:fvEv+LALBSszhQs4u/ByO6p3lb16cQIz/oT6JVDE/VE=
 github.com/odysseia-greek/delphi/ptolemaios v0.0.4 h1:Yoq58w6Z7gwse3pZBSO6Gj3Q03JKLyQBXUVuRzLI/mc=
 github.com/odysseia-greek/delphi/ptolemaios v0.0.4/go.mod h1:vfNlFMTer0uYUbUFFRQhc0uY/tLSYnsbveRBYm/vUdM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

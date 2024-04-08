@@ -276,15 +276,15 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.DatabaseSpanRequest) (*pb.TraceResponse, error) {
 	spanId := t.generateSpanID()
 
-	timeEndedStr := time.Now().UTC().Format("2006-01-02'T'15:04:05.000Z")
-	timeEnded, err := time.Parse("2006-01-02'T'15:04:05.000Z", timeEndedStr)
+	timeEndedStr := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
+	timeEnded, err := time.Parse("2006-01-02'T'15:04:05.000", timeEndedStr)
 	if err != nil {
 		return nil, err
 	}
 
 	// Convert TimeTook to a time.Duration based on MS
 	duration := time.Duration(spanRequest.TimeTook) * time.Millisecond
-	timeStartedStr := timeEnded.Add(-duration).Format("2006-01-02'T'15:04:05.000Z")
+	timeStartedStr := timeEnded.Add(-duration).Format("2006-01-02'T'15:04:05.000")
 
 	span := pb.DatabaseSpan{
 		Query:        spanRequest.Query,

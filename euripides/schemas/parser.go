@@ -57,21 +57,27 @@ func parseHitsToGraphql(hits *models.Hits) []TraceObject {
 						span.Namespace = getStringFromMap(common, "namespace")
 						span.Timestamp = getStringFromMap(common, "timestamp")
 						span.PodName = getStringFromMap(common, "pod_name")
+						span.TimeStarted = getStringFromMap(item, "time_started")
+						span.TimeFinished = getStringFromMap(item, "time_finished")
+						span.RequestBody = getStringFromMap(item, "request_body")
+						span.ResponseCode = getIntFromMap(item, "response_code")
 						span.ItemType = itemType
 						span.Action = getStringFromMap(item, "action")
-						span.ResponseBody = getStringFromMap(item, "response_body")
 						graphqlObjects = append(graphqlObjects, &span)
 
 					case "database_span":
 						var dbSpan DatabaseSpan
 						dbSpan.ParentSpanID = getStringFromMap(common, "parent_span_id")
-						dbSpan.ResultJSON = getStringFromMap(item, "result_json")
 						dbSpan.SpanID = getStringFromMap(common, "span_id")
 						dbSpan.ItemType = itemType
 						dbSpan.Query = getStringFromMap(item, "query")
+						dbSpan.Took = getStringFromMap(item, "took")
+						dbSpan.Hits = int64(getIntFromMap(item, "hits"))
 						dbSpan.Namespace = getStringFromMap(common, "namespace")
 						dbSpan.Timestamp = getStringFromMap(common, "timestamp")
 						dbSpan.PodName = getStringFromMap(common, "pod_name")
+						span.TimeStarted = getStringFromMap(item, "time_started")
+						span.TimeFinished = getStringFromMap(item, "time_finished")
 						graphqlObjects = append(graphqlObjects, &dbSpan)
 
 					default:
@@ -85,7 +91,6 @@ func parseHitsToGraphql(hits *models.Hits) []TraceObject {
 					span.Timestamp = getStringFromMap(common, "timestamp")
 					span.PodName = getStringFromMap(common, "pod_name")
 					span.ItemType = "trace"
-					span.ResponseBody = getStringFromMap(item, "response_body")
 					span.Action = getStringFromMap(item, "action")
 					graphqlObjects = append(graphqlObjects, &span)
 				}
@@ -128,12 +133,18 @@ type Span struct {
 	PodName      string `json:"pod_name"`
 	ItemType     string `json:"item_type"`
 	Action       string `json:"action"`
-	ResponseBody string `json:"response_body"`
+	RequestBody  string `json:"request_body"`
+	TimeStarted  string `json:"time_started"`
+	TimeFinished string `json:"time_finished"`
+	ResponseCode int    `json:"response_code"`
 }
 
 type DatabaseSpan struct {
 	ParentSpanID string `json:"parent_span_id"`
-	ResultJSON   string `json:"result_json"`
+	Hits         int64  `json:"hits"`
+	Took         string `json:"took"`
+	TimeFinished string `json:"time_finished"`
+	TimeStarted  string `json:"time_started"`
 	SpanID       string `json:"span_id"`
 	ItemType     string `json:"item_type"`
 	Query        string `json:"query"`

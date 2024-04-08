@@ -64,9 +64,6 @@ var databaseSpanType = graphql.NewObject(graphql.ObjectConfig{
 		"parentSpanID": &graphql.Field{
 			Type: graphql.String,
 		},
-		"resultJSON": &graphql.Field{
-			Type: graphql.String,
-		},
 		"spanID": &graphql.Field{
 			Type: graphql.String,
 		},
@@ -85,6 +82,12 @@ var databaseSpanType = graphql.NewObject(graphql.ObjectConfig{
 		"podName": &graphql.Field{
 			Type: graphql.String,
 		},
+		"took": &graphql.Field{
+			Type: graphql.String,
+		},
+		"hits": &graphql.Field{
+			Type: graphql.Int,
+		},
 	},
 })
 
@@ -96,9 +99,6 @@ var spanType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"requestBody": &graphql.Field{
-			Type: graphql.String,
-		},
-		"responseBody": &graphql.Field{
 			Type: graphql.String,
 		},
 		"spanID": &graphql.Field{
@@ -118,6 +118,15 @@ var spanType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"podName": &graphql.Field{
 			Type: graphql.String,
+		},
+		"timeFinished": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timeStarted": &graphql.Field{
+			Type: graphql.String,
+		},
+		"responseCode": &graphql.Field{
+			Type: graphql.Int,
 		},
 	},
 })
@@ -157,6 +166,12 @@ var traceType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"rootQuery": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timeFinished": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timeStarted": &graphql.Field{
 			Type: graphql.String,
 		},
 	},
