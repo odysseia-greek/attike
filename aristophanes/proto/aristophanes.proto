@@ -38,19 +38,33 @@ message Trace {
   TraceCommon common = 4;
 }
 
-message Span {
+message SpanStart {
   string action = 1; // Action performed in the span
   string request_body = 2; // Optional: Request body data
-  string response_body = 3; // Optional: Response body data
+  string time_started = 3;
   // Reuse TraceCommon for common fields
   TraceCommon common = 4;
+}
+
+message SpanStop {
+  string response_body = 1;
+  int32 response_code = 2;
+  string time_ended = 3;
+  TraceCommon common = 4;
+}
+
+message Span {
+  string action = 1; // Action performed in the span
+  TraceCommon common = 2;
 }
 
 message DatabaseSpan {
   string query = 1; // Database query statement
   string result_json = 2; // Query result data as JSON string
   // Reuse TraceCommon for common fields
-  TraceCommon common = 3;
+  string time_started = 3;
+  string time_ended = 4;
+  TraceCommon common = 5;
 }
 
 // The TraceService service provides operations for managing and tracking traces and spans.
@@ -62,10 +76,13 @@ service TraceService {
   rpc Trace(TraceRequest) returns (TraceResponse);
 
   // Start a new span within an existing trace.
-  rpc StartNewSpan(StartSpanRequest) returns (TraceResponse);
+  rpc StartSpan(StartSpanRequest) returns (TraceResponse);
 
   // Record a span with details of an action performed.
   rpc Span(SpanRequest) returns (TraceResponse);
+
+  // Close an existing Span
+  rpc CloseSpan(CloseSpanRequest) returns (TraceResponse);
 
   // Record a span related to a database query.
   rpc DatabaseSpan(DatabaseSpanRequest) returns (TraceResponse);
@@ -94,16 +111,24 @@ message CloseTraceRequest {
   int32 response_code = 4;
 }
 
+message CloseSpanRequest {
+  string trace_id = 1; // Root trace_id which where item will be added
+  string parent_span_id = 2;  // The root parent_span_id
+  string response_body = 3; // Optional: Response body data
+  int32 response_code = 4;
+}
+
 message StartSpanRequest {
   string trace_id = 1; // Root trace_id which where item will be added
+  string parent_span_id = 2;  // The root parent_span_id
+  string action = 3; // Action performed in the span
+  string request_body = 4; // Optional: Request body data
 }
 
 message SpanRequest {
   string trace_id = 1; // Root trace_id which where item will be added
   string parent_span_id = 2;  // The root parent_span_id
   string action = 3; // Action performed in the span
-  string request_body = 4; // Optional: Request body data
-  string response_body = 5; // Optional: Response body data
 }
 
 message DatabaseSpanRequest {
@@ -112,6 +137,7 @@ message DatabaseSpanRequest {
   string action = 3; // Action performed in the span
   string query = 4; // Database query statement
   string result_json = 5; // Query result data as JSON string
+  int64 time_took = 6;
 }
 
 message TraceResponse {

@@ -132,6 +132,7 @@
     <div class="visual-container">
         <h2 id="visual">FlowChart</h2>
         {#if ganntContent}
+            <p>{ganntContent}</p>
             <Diagram mermaidDiagram={ganntContent} />
         {:else}
             <p>No data available for visualization.</p>

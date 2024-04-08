@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/odysseia-greek/agora/plato/logging"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
-	"log"
 	"time"
 )
 
@@ -67,7 +67,7 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	log.Printf("created trace with id: %s", doc.ID)
+	logging.Debug(fmt.Sprintf("created trace with id: %s", doc.ID))
 
 	combinedId := fmt.Sprintf("%s+%s+%d", traceId, spanId, 1)
 	return &pb.TraceResponse{
@@ -84,6 +84,7 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
+			ItemType:     TRACE,
 		},
 	}
 
@@ -129,18 +130,86 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 	// Remove the entry from the map perhaps there is a concurrent write to map here.
 	delete(t.StartTimeMap, doc.ID)
 
-	log.Printf("closed trace with id: %s", doc.ID)
+	logging.Debug(fmt.Sprintf("closed trace with id: %s", doc.ID))
 
 	return &pb.TraceResponse{
 		CombinedId: stop.TraceId,
 	}, nil
 }
 
-func (t *TraceServiceImpl) StartNewSpan(ctx context.Context, start *pb.StartSpanRequest) (*pb.TraceResponse, error) {
+func (t *TraceServiceImpl) StartSpan(ctx context.Context, start *pb.StartSpanRequest) (*pb.TraceResponse, error) {
 	spanId := t.generateSpanID()
-	combinedId := fmt.Sprintf("%s+%s", start.TraceId, spanId)
+
+	timeStarted := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
+
+	span := pb.SpanStart{
+		Action:      start.Action,
+		RequestBody: start.RequestBody,
+		TimeStarted: timeStarted,
+		Common: &pb.TraceCommon{
+			SpanId:       spanId,
+			ParentSpanId: start.ParentSpanId,
+			Timestamp:    timeStarted,
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     SPAN,
+		},
+	}
+
+	data, err := json.Marshal(&span)
+	if err != nil {
+		return nil, err
+	}
+
+	docID, err := t.UpdateDocumentWithRetry(start.TraceId, ITEMS, data)
+	if err != nil {
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
+	}
+
+	logging.Debug(fmt.Sprintf("started span with id: %s and parentId: %s to trace: %s", spanId, start.ParentSpanId, docID))
+
+	combinedId := fmt.Sprintf("%s+%s+%d", start.TraceId, spanId, 1)
 	return &pb.TraceResponse{
 		CombinedId: combinedId,
+	}, nil
+}
+
+func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequest) (*pb.TraceResponse, error) {
+	spanId := t.generateSpanID()
+
+	timeEnded := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
+
+	span := pb.SpanStop{
+		ResponseCode: stop.ResponseCode,
+		TimeEnded:    timeEnded,
+		Common: &pb.TraceCommon{
+			ParentSpanId: stop.ParentSpanId,
+			SpanId:       spanId,
+			Timestamp:    timeEnded,
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     SPAN,
+		},
+	}
+
+	if stop.ResponseBody != "" {
+		span.ResponseBody = stop.ResponseBody
+	}
+
+	data, err := json.Marshal(&span)
+	if err != nil {
+		return nil, err
+	}
+
+	docID, err := t.UpdateDocumentWithRetry(stop.TraceId, ITEMS, data)
+	if err != nil {
+		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
+	}
+
+	logging.Debug(fmt.Sprintf("started span with id: %s adn parentId: %s to trace: %s", spanId, stop.ParentSpanId, docID))
+
+	return &pb.TraceResponse{
+		CombinedId: stop.TraceId,
 	}, nil
 }
 
@@ -172,7 +241,7 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	log.Printf("added trace with id: %s", docID)
+	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
 
 	combinedId := fmt.Sprintf("%s+%s", traceRequest.TraceId, traceRequest.ParentSpanId)
 	return &pb.TraceResponse{
@@ -184,9 +253,7 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 	spanId := t.generateSpanID()
 
 	span := pb.Span{
-		Action:       spanRequest.Action,
-		RequestBody:  spanRequest.RequestBody,
-		ResponseBody: spanRequest.ResponseBody,
+		Action: spanRequest.Action,
 		Common: &pb.TraceCommon{
 			SpanId:       spanId,
 			ParentSpanId: spanRequest.ParentSpanId,
@@ -207,7 +274,7 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	log.Printf("added span with id: %s to trace: %s", spanId, docID)
+	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanId, docID))
 
 	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
 	return &pb.TraceResponse{
@@ -218,13 +285,24 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.DatabaseSpanRequest) (*pb.TraceResponse, error) {
 	spanId := t.generateSpanID()
 
+	timeEndedStr := "2006-01-02T15:04:05.000Z"
+	timeEnded, err := time.Parse("2006-01-02T15:04:05.000Z", timeEndedStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert TimeTook to a time.Duration based on MS
+	duration := time.Duration(spanRequest.TimeTook) * time.Millisecond
+
 	span := pb.DatabaseSpan{
-		Query:      spanRequest.Query,
-		ResultJson: spanRequest.ResultJson,
+		Query:       spanRequest.Query,
+		ResultJson:  spanRequest.ResultJson,
+		TimeStarted: timeEnded.Add(-duration).String(),
+		TimeEnded:   timeEndedStr,
 		Common: &pb.TraceCommon{
 			SpanId:       spanId,
 			ParentSpanId: spanRequest.ParentSpanId,
-			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			Timestamp:    timeEndedStr,
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
 			ItemType:     DATABASESPAN,
@@ -241,7 +319,7 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	log.Printf("added database_span with id: %s to trace: %s", spanId, docID)
+	logging.Debug(fmt.Sprintf("added database_span with id: %s to trace: %s", spanId, docID))
 
 	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
 	return &pb.TraceResponse{
