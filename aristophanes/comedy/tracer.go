@@ -175,8 +175,6 @@ func (t *TraceServiceImpl) StartSpan(ctx context.Context, start *pb.StartSpanReq
 }
 
 func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequest) (*pb.TraceResponse, error) {
-	spanId := t.generateSpanID()
-
 	timeEnded := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
 
 	span := pb.SpanStop{
@@ -184,7 +182,7 @@ func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequ
 		TimeEnded:    timeEnded,
 		Common: &pb.TraceCommon{
 			ParentSpanId: stop.ParentSpanId,
-			SpanId:       spanId,
+			SpanId:       stop.SpanId,
 			Timestamp:    timeEnded,
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
@@ -250,17 +248,14 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 }
 
 func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest) (*pb.TraceResponse, error) {
-	spanId := t.generateSpanID()
-
 	span := pb.Span{
 		Action: spanRequest.Action,
 		Common: &pb.TraceCommon{
-			SpanId:       spanId,
-			ParentSpanId: spanRequest.ParentSpanId,
-			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     SPAN,
+			SpanId:    spanRequest.ParentSpanId,
+			Timestamp: time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			PodName:   t.PodName,
+			Namespace: t.Namespace,
+			ItemType:  SPAN,
 		},
 	}
 
@@ -274,7 +269,7 @@ func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanId, docID))
+	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanRequest.ParentSpanId, docID))
 
 	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
 	return &pb.TraceResponse{

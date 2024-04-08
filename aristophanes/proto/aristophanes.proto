@@ -114,8 +114,9 @@ message CloseTraceRequest {
 message CloseSpanRequest {
   string trace_id = 1; // Root trace_id which where item will be added
   string parent_span_id = 2;  // The root parent_span_id
-  string response_body = 3; // Optional: Response body data
-  int32 response_code = 4;
+  string span_id = 3;
+  string response_body = 4; // Optional: Response body data
+  int32 response_code = 5;
 }
 
 message StartSpanRequest {
