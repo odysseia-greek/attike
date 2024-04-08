@@ -179,7 +179,7 @@ func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequ
 
 	span := pb.SpanStop{
 		ResponseCode: stop.ResponseCode,
-		TimeEnded:    timeEnded,
+		TimeFinished: timeEnded,
 		Common: &pb.TraceCommon{
 			ParentSpanId: stop.ParentSpanId,
 			SpanId:       stop.SpanId,
@@ -204,7 +204,7 @@ func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequ
 		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
 	}
 
-	logging.Debug(fmt.Sprintf("closed span with id: %s adn parentId: %s to trace: %s", stop.SpanId, stop.ParentSpanId, docID))
+	logging.Debug(fmt.Sprintf("closed span with id: %s and parentId: %s to trace: %s", stop.SpanId, stop.ParentSpanId, docID))
 
 	return &pb.TraceResponse{
 		CombinedId: stop.TraceId,
@@ -288,12 +288,13 @@ func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.Dat
 
 	// Convert TimeTook to a time.Duration based on MS
 	duration := time.Duration(spanRequest.TimeTook) * time.Millisecond
+	timeStartedStr := timeEnded.Add(-duration).Format("2006-01-02'T'15:04:05.000Z")
 
 	span := pb.DatabaseSpan{
-		Query:       spanRequest.Query,
-		ResultJson:  spanRequest.ResultJson,
-		TimeStarted: timeEnded.Add(-duration).String(),
-		TimeEnded:   timeEndedStr,
+		Query:        spanRequest.Query,
+		ResultJson:   spanRequest.ResultJson,
+		TimeStarted:  timeStartedStr,
+		TimeFinished: timeEndedStr,
 		Common: &pb.TraceCommon{
 			SpanId:       spanId,
 			ParentSpanId: spanRequest.ParentSpanId,
