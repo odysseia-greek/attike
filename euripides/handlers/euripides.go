@@ -165,11 +165,13 @@ func (e *EuripidesHandler) filterInputToQuery(input map[string]interface{}) (map
 		}
 	}
 
-	// Add the filter to the query
-	query["bool"] = map[string]interface{}{
-		"filter": []map[string]interface{}{
-			filter,
-		},
+	if len(filter) > 0 {
+		// Add the filter to the query
+		query["bool"] = map[string]interface{}{
+			"filter": []map[string]interface{}{
+				filter,
+			},
+		}
 	}
 
 	return map[string]interface{}{"query": query}, nil

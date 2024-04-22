@@ -23,6 +23,7 @@ query GetTraces($input: TraceQueryInput!) {
 			}
 			... on Span {
 				parentSpanID
+				spanID
 				namespace
 				timestamp
 				podName

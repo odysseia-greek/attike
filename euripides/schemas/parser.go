@@ -54,6 +54,7 @@ func parseHitsToGraphql(hits *models.Hits) []TraceObject {
 					case "span":
 						var span Span
 						span.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						span.SpanID = getStringFromMap(common, "span_id")
 						span.Namespace = getStringFromMap(common, "namespace")
 						span.Timestamp = getStringFromMap(common, "timestamp")
 						span.PodName = getStringFromMap(common, "pod_name")
@@ -76,8 +77,8 @@ func parseHitsToGraphql(hits *models.Hits) []TraceObject {
 						dbSpan.Namespace = getStringFromMap(common, "namespace")
 						dbSpan.Timestamp = getStringFromMap(common, "timestamp")
 						dbSpan.PodName = getStringFromMap(common, "pod_name")
-						span.TimeStarted = getStringFromMap(item, "time_started")
-						span.TimeFinished = getStringFromMap(item, "time_finished")
+						dbSpan.TimeStarted = getStringFromMap(item, "time_started")
+						dbSpan.TimeFinished = getStringFromMap(item, "time_finished")
 						graphqlObjects = append(graphqlObjects, &dbSpan)
 
 					default:
@@ -128,6 +129,7 @@ type Trace struct {
 
 type Span struct {
 	ParentSpanID string `json:"parent_span_id"`
+	SpanID       string `json:"span_id"`
 	Namespace    string `json:"namespace"`
 	Timestamp    string `json:"timestamp"`
 	PodName      string `json:"pod_name"`

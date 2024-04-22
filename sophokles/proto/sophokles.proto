@@ -1,0 +1,39 @@
+syntax = "proto3";
+option go_package = "github.com/odysseia-greek/attike/sophokles/proto";
+
+package proto;
+
+
+service MetricsService {
+  rpc HealthCheck(Empty) returns (HealthCheckResponse);
+  rpc FetchMetrics(Empty) returns (MetricsResponse);
+}
+
+message Empty {}
+
+message HealthCheckResponse {
+  bool status = 1;
+}
+
+message MetricsResponse {
+  PodMetrics pod = 1;
+  string cpu_units = 3;
+  string memory_units = 4;
+}
+
+message PodMetrics {
+  string name = 1;
+  int64 cpu_raw = 2;
+  int64 memory_raw = 3;
+  string cpu_human_readable = 4;
+  string memory_human_readable = 5;
+  repeated ContainerMetrics containers = 6;
+}
+
+message ContainerMetrics {
+  string container_name = 1;
+  int64 container_cpu_raw = 2;
+  int64 container_memory_raw = 3;
+  string container_cpu_human_readable = 4;
+  string container_memory_human_readable = 5;
+}

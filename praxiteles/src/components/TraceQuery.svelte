@@ -12,13 +12,17 @@
 
     // Declare a variable to store the query result
     let queryResult = null; // Declare queryResult here
-    let ganntContent = ``
+    let ganntContent = null;
+    let stateChartContent = null;
 
     // Function to handle the query result
     function handleQueryResult(result) {
-        // The query result is available in the result variable
-        // You can access data using result.data
         queryResult = result.data; // Assign the result to queryResult
+        if (result.data.traces && result.data.traces.length > 0) {
+            let jsonResult = JSON.stringify(result.data.traces[0], null, 2)
+            ganntContent = convertTraceToGannt(jsonResult);
+            stateChartContent = convertTraceToStateDiagram(jsonResult);
+        }
     }
 
     // Create a Promise-based function to handle the GraphQL query
@@ -46,6 +50,54 @@
         // Call the Promise-based function to handle the GraphQL query
         handleQueryWithFilters(filters);
     });
+    function convertTraceToStateDiagram(traceData) {
+        let traceDataParsed = JSON.parse(traceData);
+
+        let diagram = `---\nState Diagram for ${traceDataParsed.traceID}\n---\n`;
+        diagram += 'stateDiagram-v2\n';
+
+        // Create a mapping of spanID to podName for all spans
+        let spanIdToPodName = {};
+        traceDataParsed.items.filter(item => item.itemType === 'span').forEach(span => {
+            spanIdToPodName[span.spanID] = span.podName.split('-')[0];
+        });
+
+        let firstServicePodName = "";
+        // Initialize the diagram with the first service
+        if (traceDataParsed.items.length > 0 && traceDataParsed.items[0].itemType === 'trace') {
+            firstServicePodName = traceDataParsed.items[0].podName.split('-')[0];
+            if (firstServicePodName) {
+                diagram += `    [*] --> ${firstServicePodName}\n`;
+            }
+        }
+
+        let firstTransitionAdded = false;
+
+        // Iterate through traces to create transitions based on parentSpanID -> spanID mapping
+        traceDataParsed.items.filter(item => item.itemType === 'trace').forEach(trace => {
+            const parentService = spanIdToPodName[trace.parentSpanID];
+            const childService = trace.podName.split('-')[0]; // Directly use trace podName if no spanID -> podName mapping
+
+            // Add transition if parentService is identified
+            if (parentService && childService) {
+                const transition = `    ${parentService} --> ${childService}`;
+                diagram += `${transition}\n`;
+
+                // Add the missing link between the firstServicePodName and the first parentService
+                if (!firstTransitionAdded && firstServicePodName && firstServicePodName !== childService) {
+                    diagram += `    ${firstServicePodName} --> ${parentService}\n`;
+                    firstTransitionAdded = true; // Ensure this transition is only added once
+                }
+            }
+
+            if (!firstTransitionAdded && parentService === undefined  && firstServicePodName !== childService) {
+                diagram += `    ${firstServicePodName} --> ${childService}\n`;
+                firstTransitionAdded = true; // Ensure this transition is only added once
+            }
+        });
+
+        return diagram;
+    }
 
     function convertTraceToGannt(traceData) {
         let traceDataParsed = JSON.parse(traceData);
@@ -85,13 +137,46 @@
             diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
         });
 
-        return diagram;
-    }
+        let spanItems = traceDataParsed.items.filter(item => item.itemType === 'span')
+        const groupedSpans = spanItems.reduce((acc, item) => {
+            if (!acc[item.spanID]) {
+                acc[item.spanID] = { start: null, end: null, podName: item.podName, parentSpanID: item.parentSpanID };
+            }
+            // Assign start time if 'timeStarted' is present, else assign end time
+            if (item.timeStarted) {
+                acc[item.spanID].start = item.timeStarted;
+            } else if (item.timeFinished) {
+                acc[item.spanID].end = item.timeFinished;
+            }
+            return acc;
+        }, {});
 
-    $: if (queryResult && queryResult.traces && queryResult.traces.length > 0) {
-        ganntContent = convertTraceToGannt(JSON.stringify(queryResult.traces[0], null, 2));
-    } else {
-        ganntContent = '';
+        const mergedSpans = Object.entries(groupedSpans).map(([spanID, { start, end, podName, parentSpanID }]) => ({
+            spanID,
+            podName,
+            parentSpanID,
+            timeStarted: start,
+            timeFinished: end
+        }));
+
+        diagram += `section Span\n`;
+        mergedSpans.forEach((item, index) => {
+            const taskLabel = `${item.spanID} - ${item.podName}`;
+            // Now including parentID and the podName of the starter in the output
+            diagram += `    ${taskLabel} (${item.parentSpanID}):${index + 1}, ${item.timeStarted }, ${item.timeFinished}\n`;
+        });
+
+        diagram += `section Database\n`;
+        let dataBaseItem = traceDataParsed.items.filter(item => item.itemType === 'database_span')
+        dataBaseItem.forEach((item, index) => {
+            const taskStart = item.timeStarted;
+            const taskEnd = item.timeFinished
+            const taskLabel = item.podName;
+
+            diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+        });
+
+        return diagram;
     }
 
 </script>
@@ -130,10 +215,14 @@
         {/if}
     </div>
     <div class="visual-container">
-        <h2 id="visual">FlowChart</h2>
+        <h2 id="visual">Diagrams</h2>
         {#if ganntContent}
-            <p>{ganntContent}</p>
             <Diagram mermaidDiagram={ganntContent} />
+        {:else}
+            <p>No data available for visualization.</p>
+        {/if}
+        {#if stateChartContent}
+            <Diagram mermaidDiagram={stateChartContent} />
         {:else}
             <p>No data available for visualization.</p>
         {/if}

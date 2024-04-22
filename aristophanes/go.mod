@@ -1,6 +1,6 @@
 module github.com/odysseia-greek/attike/aristophanes
 
-go 1.21.4
+go 1.22.0
 
 require (
 	github.com/google/uuid v1.5.0

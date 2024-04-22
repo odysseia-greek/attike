@@ -88,6 +88,12 @@ var databaseSpanType = graphql.NewObject(graphql.ObjectConfig{
 		"hits": &graphql.Field{
 			Type: graphql.Int,
 		},
+		"timeFinished": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timeStarted": &graphql.Field{
+			Type: graphql.String,
+		},
 	},
 })
 
@@ -166,12 +172,6 @@ var traceType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"rootQuery": &graphql.Field{
-			Type: graphql.String,
-		},
-		"timeFinished": &graphql.Field{
-			Type: graphql.String,
-		},
-		"timeStarted": &graphql.Field{
 			Type: graphql.String,
 		},
 	},

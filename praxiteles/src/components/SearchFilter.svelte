@@ -15,6 +15,7 @@
     };
 
     let exampleQuery = {
+        ids: [""],
         podName: "",
         operation: "",
         statusCode: "",
@@ -23,6 +24,7 @@
         endTime: "",
     };
 
+    let traceIDs = [];
     let podName = ''; // Store the podName filter
     let operation = ''; // Store the operation filter
     let statusCode = ''; // Store the statusCode filter
@@ -38,6 +40,10 @@
         const filters = {};
 
         // Add non-empty values to the filters object
+        if (traceIDs.length > 0) {
+            filters.ids = traceIDs;
+        }
+
         if (podName !== '') {
             filters.podName = podName;
         }
@@ -64,10 +70,32 @@
         document.dispatchEvent(customEvent);
     }
 
+    function clear() {
+        traceIDs = [];
+        podName = '';
+        operation = '';
+        statusCode = '';
+        totalTimeHigherThan = '';
+        beginTime = '';
+        endTime = '';
+
+        exampleQuery = {
+            ids: [""],
+            podName: "",
+            operation: "",
+            statusCode: "",
+            totalTimeHigherThan: "",
+            beginTime: "",
+            endTime: "",
+        };
+
+        search()
+    }
 
     // Function to update the example query based on filter changes
     function updateExampleQuery() {
         exampleQuery = {
+            ids: traceIDs,
             podName: podName.trim() !== '' ? podName : undefined,
             operation: operation.trim() !== '' ? operation : undefined,
             statusCode: statusCode.trim() !== '' ? statusCode : undefined,
@@ -82,12 +110,14 @@
     // Define your GraphQL query for the initial data retrieval
     const BUILDER_TRACES = gql`${builderQuery}`;
 
+    let ids = [];
     let responseCodes = [];
     let operations = [];
     let podNames = [];
 
     // Perform the initial query and populate the options
     onMount(async () => {
+        search()
         const variables = {
             input: {},
         };
@@ -97,11 +127,13 @@
             variables: variables
         });
 
-
         if (result.data && result.data.traces) {
             const traces = result.data.traces;
 
             traces.forEach(trace => {
+                if ('traceID' in trace) {
+                    ids.push(trace.traceID)
+                }
                 if ('responseCode' in trace) {
                     const responseCode = trace.responseCode;
                     if (responseCode !== '' && !responseCodes.includes(responseCode)) {
@@ -127,6 +159,7 @@
     });
 
     // Variables to control the visibility of options
+    let showIdsOptions = false;
     let showPodNameOptions = false;
     let showOperationOptions = false;
     let showStatusCodeOptions = false;
@@ -134,6 +167,9 @@
     // Function to toggle visibility of options
     function showOptions(field) {
         switch (field) {
+            case 'ids':
+                showIdsOptions = !showIdsOptions;
+                break;
             case 'podName':
                 showPodNameOptions = !showPodNameOptions;
                 break;
@@ -150,6 +186,10 @@
     // Function to set the search term and hide options
     function setSearchTerm(inputField, term) {
         switch (inputField) {
+            case 'ids':
+                traceIDs = [term];
+                showIdsOptions = false;
+                break;
             case 'podName':
                 podName = term;
                 showPodNameOptions = false;
@@ -300,6 +340,24 @@
 
         <input
                 type="text"
+                placeholder="Ids"
+                bind:value={ids}
+                on:input={updateExampleQuery}
+                on:click={() => showOptions('ids')}
+        />
+        {#if showIdsOptions}
+            <div class="options-dropdown">
+                <select on:change={(event) => setSearchTerm('ids', event.target.value)}>
+                    <option value="">Select an ID</option>
+                    {#each ids as id }
+                        <option value={id}>{id}</option>
+                    {/each}
+                </select>
+            </div>
+        {/if}
+
+        <input
+                type="text"
                 placeholder="Operation"
                 bind:value={operation}
                 on:input={updateExampleQuery}
@@ -338,6 +396,7 @@
         <input type="datetime-local" placeholder="Begin Time" bind:value={beginTime} on:input={updateExampleQuery} />
         <input type="datetime-local" placeholder="End Time" bind:value={endTime} on:input={updateExampleQuery} />
         <button on:click={search}>Search</button>
+        <button on:click={clear}>Clear</button>
     </div>
     <!-- Display the dynamic example query to the user -->
     <div class="json-view">
