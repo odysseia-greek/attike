@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/odysseia-greek/agora/aristoteles v0.1.4
 	github.com/odysseia-greek/agora/plato v0.1.15
-	github.com/odysseia-greek/attike/sophokles v0.0.1
+	github.com/odysseia-greek/attike/sophokles v0.0.2
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0

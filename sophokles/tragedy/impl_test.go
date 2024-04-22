@@ -36,7 +36,7 @@ func TestStartMetricsMocked(t *testing.T) {
 	})
 
 	t.Run("HealthCheck", func(t *testing.T) {
-		expectedResponse := &pb.HealthCheckResponse{
+		expectedResponse := &pb.HealthCheckResponseMetrics{
 			Status: true,
 		}
 

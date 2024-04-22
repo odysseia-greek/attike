@@ -62,7 +62,7 @@ func NewTraceServiceImpl(env string) (*TraceServiceImpl, error) {
 
 	var metrics *sophokles.ClientMetrics
 	if gatherMetrics {
-		metrics = sophokles.NewClientTracer()
+		metrics = sophokles.NewMetricsClient()
 		if healthCheck {
 			healthy := metrics.WaitForHealthyState()
 			if !healthy {
