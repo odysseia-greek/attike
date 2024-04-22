@@ -10,9 +10,9 @@ import (
 )
 
 type MetricService interface {
-	HealthCheckMetrics(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponseMetrics, error)
+	HealthCheckMetrics(ctx context.Context, start *pb.EmptyMetrics) (*pb.HealthCheckResponseMetrics, error)
 	WaitForHealthyState() bool
-	FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error)
+	FetchMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.MetricsResponse, error)
 }
 
 type MetricServiceImpl struct {
@@ -43,7 +43,7 @@ func (c *ClientMetrics) WaitForHealthyState() bool {
 	endTime := time.Now().Add(timeout)
 
 	for time.Now().Before(endTime) {
-		response, err := c.HealthCheckMetrics(context.Background(), &pb.Empty{})
+		response, err := c.HealthCheckMetrics(context.Background(), &pb.EmptyMetrics{})
 		if err == nil && response.Status {
 			return true
 		}
@@ -54,10 +54,10 @@ func (c *ClientMetrics) WaitForHealthyState() bool {
 	return false
 }
 
-func (c *ClientMetrics) HealthCheckMetrics(ctx context.Context, request *pb.Empty) (*pb.HealthCheckResponseMetrics, error) {
+func (c *ClientMetrics) HealthCheckMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.HealthCheckResponseMetrics, error) {
 	return c.metrics.HealthCheckMetrics(ctx, request)
 }
 
-func (c *ClientMetrics) FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error) {
+func (c *ClientMetrics) FetchMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.MetricsResponse, error) {
 	return c.metrics.FetchMetrics(ctx, request)
 }

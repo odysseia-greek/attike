@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (m *MetricServiceImpl) HealthCheckMetrics(ctx context.Context, health *pb.Empty) (*pb.HealthCheckResponseMetrics, error) {
+func (m *MetricServiceImpl) HealthCheckMetrics(ctx context.Context, health *pb.EmptyMetrics) (*pb.HealthCheckResponseMetrics, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
@@ -24,7 +24,7 @@ func (m *MetricServiceImpl) HealthCheckMetrics(ctx context.Context, health *pb.E
 	return &pb.HealthCheckResponseMetrics{Status: healthy}, nil
 }
 
-func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error) {
+func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.MetricsResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 

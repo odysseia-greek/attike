@@ -12,7 +12,7 @@ func TestStartMetricsMocked(t *testing.T) {
 	mockService := new(MockMetricsService)
 
 	t.Run("Metrics", func(t *testing.T) {
-		request := &pb.Empty{}
+		request := &pb.EmptyMetrics{}
 
 		expectedResponse := &pb.MetricsResponse{
 			// Set fields of the response here
@@ -40,7 +40,7 @@ func TestStartMetricsMocked(t *testing.T) {
 			Status: true,
 		}
 
-		request := pb.Empty{}
+		request := pb.EmptyMetrics{}
 
 		client := &MetricServiceClient{
 			Impl: mockService, // Set the mock service as the implementation

@@ -5,11 +5,11 @@ package proto;
 
 
 service MetricsService {
-  rpc HealthCheckMetrics(Empty) returns (HealthCheckResponseMetrics);
-  rpc FetchMetrics(Empty) returns (MetricsResponse);
+  rpc HealthCheckMetrics(EmptyMetrics) returns (HealthCheckResponseMetrics);
+  rpc FetchMetrics(EmptyMetrics) returns (MetricsResponse);
 }
 
-message Empty {}
+message EmptyMetrics {}
 
 message HealthCheckResponseMetrics{
   bool status = 1;

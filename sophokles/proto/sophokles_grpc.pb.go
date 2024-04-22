@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsServiceClient interface {
-	HealthCheckMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthCheckResponseMetrics, error)
-	FetchMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error)
+	HealthCheckMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*HealthCheckResponseMetrics, error)
+	FetchMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*MetricsResponse, error)
 }
 
 type metricsServiceClient struct {
@@ -34,7 +34,7 @@ func NewMetricsServiceClient(cc grpc.ClientConnInterface) MetricsServiceClient {
 	return &metricsServiceClient{cc}
 }
 
-func (c *metricsServiceClient) HealthCheckMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthCheckResponseMetrics, error) {
+func (c *metricsServiceClient) HealthCheckMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*HealthCheckResponseMetrics, error) {
 	out := new(HealthCheckResponseMetrics)
 	err := c.cc.Invoke(ctx, "/proto.MetricsService/HealthCheckMetrics", in, out, opts...)
 	if err != nil {
@@ -43,7 +43,7 @@ func (c *metricsServiceClient) HealthCheckMetrics(ctx context.Context, in *Empty
 	return out, nil
 }
 
-func (c *metricsServiceClient) FetchMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error) {
+func (c *metricsServiceClient) FetchMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*MetricsResponse, error) {
 	out := new(MetricsResponse)
 	err := c.cc.Invoke(ctx, "/proto.MetricsService/FetchMetrics", in, out, opts...)
 	if err != nil {
@@ -56,8 +56,8 @@ func (c *metricsServiceClient) FetchMetrics(ctx context.Context, in *Empty, opts
 // All implementations must embed UnimplementedMetricsServiceServer
 // for forward compatibility
 type MetricsServiceServer interface {
-	HealthCheckMetrics(context.Context, *Empty) (*HealthCheckResponseMetrics, error)
-	FetchMetrics(context.Context, *Empty) (*MetricsResponse, error)
+	HealthCheckMetrics(context.Context, *EmptyMetrics) (*HealthCheckResponseMetrics, error)
+	FetchMetrics(context.Context, *EmptyMetrics) (*MetricsResponse, error)
 	mustEmbedUnimplementedMetricsServiceServer()
 }
 
@@ -65,10 +65,10 @@ type MetricsServiceServer interface {
 type UnimplementedMetricsServiceServer struct {
 }
 
-func (UnimplementedMetricsServiceServer) HealthCheckMetrics(context.Context, *Empty) (*HealthCheckResponseMetrics, error) {
+func (UnimplementedMetricsServiceServer) HealthCheckMetrics(context.Context, *EmptyMetrics) (*HealthCheckResponseMetrics, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HealthCheckMetrics not implemented")
 }
-func (UnimplementedMetricsServiceServer) FetchMetrics(context.Context, *Empty) (*MetricsResponse, error) {
+func (UnimplementedMetricsServiceServer) FetchMetrics(context.Context, *EmptyMetrics) (*MetricsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchMetrics not implemented")
 }
 func (UnimplementedMetricsServiceServer) mustEmbedUnimplementedMetricsServiceServer() {}
@@ -85,7 +85,7 @@ func RegisterMetricsServiceServer(s grpc.ServiceRegistrar, srv MetricsServiceSer
 }
 
 func _MetricsService_HealthCheckMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+	in := new(EmptyMetrics)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -97,13 +97,13 @@ func _MetricsService_HealthCheckMetrics_Handler(srv interface{}, ctx context.Con
 		FullMethod: "/proto.MetricsService/HealthCheckMetrics",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServiceServer).HealthCheckMetrics(ctx, req.(*Empty))
+		return srv.(MetricsServiceServer).HealthCheckMetrics(ctx, req.(*EmptyMetrics))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _MetricsService_FetchMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+	in := new(EmptyMetrics)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func _MetricsService_FetchMetrics_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/proto.MetricsService/FetchMetrics",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServiceServer).FetchMetrics(ctx, req.(*Empty))
+		return srv.(MetricsServiceServer).FetchMetrics(ctx, req.(*EmptyMetrics))
 	}
 	return interceptor(ctx, in, info, handler)
 }
