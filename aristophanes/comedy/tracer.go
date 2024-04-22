@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/odysseia-greek/agora/plato/logging"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
+	pbm "github.com/odysseia-greek/attike/sophokles/proto"
 	"time"
 )
 
@@ -222,6 +223,23 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 			Namespace:    t.Namespace,
 			ItemType:     TRACE,
 		},
+	}
+
+	if t.GatherMetrics {
+		metrics, err := t.Metrics.FetchMetrics(ctx, &pbm.Empty{})
+		if err != nil {
+			logging.Error(err.Error())
+		}
+
+		trace.Metrics = &pb.TracingMetrics{
+			CpuUnits:            metrics.CpuUnits,
+			MemoryUnits:         metrics.MemoryUnits,
+			Name:                metrics.Pod.Name,
+			CpuRaw:              metrics.Pod.CpuRaw,
+			MemoryRaw:           metrics.Pod.MemoryRaw,
+			CpuHumanReadable:    metrics.Pod.CpuHumanReadable,
+			MemoryHumanReadable: metrics.Pod.MemoryHumanReadable,
+		}
 	}
 	data, err := json.Marshal(&trace)
 	if err != nil {

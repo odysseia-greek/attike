@@ -10,7 +10,7 @@ import (
 )
 
 type MetricService interface {
-	HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error)
+	HealthCheckMetrics(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponseMetrics, error)
 	WaitForHealthyState() bool
 	FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error)
 }
@@ -31,7 +31,7 @@ type ClientMetrics struct {
 	metrics pb.MetricsServiceClient
 }
 
-func NewClientTracer() *ClientMetrics {
+func NewMetricsClient() *ClientMetrics {
 	conn, _ := grpc.Dial(DefaultAddress, grpc.WithInsecure())
 	client := pb.NewMetricsServiceClient(conn)
 	return &ClientMetrics{metrics: client}
@@ -43,7 +43,7 @@ func (c *ClientMetrics) WaitForHealthyState() bool {
 	endTime := time.Now().Add(timeout)
 
 	for time.Now().Before(endTime) {
-		response, err := c.HealthCheck(context.Background(), &pb.Empty{})
+		response, err := c.HealthCheckMetrics(context.Background(), &pb.Empty{})
 		if err == nil && response.Status {
 			return true
 		}
@@ -54,8 +54,8 @@ func (c *ClientMetrics) WaitForHealthyState() bool {
 	return false
 }
 
-func (c *ClientMetrics) HealthCheck(ctx context.Context, request *pb.Empty) (*pb.HealthCheckResponse, error) {
-	return c.metrics.HealthCheck(ctx, request)
+func (c *ClientMetrics) HealthCheckMetrics(ctx context.Context, request *pb.Empty) (*pb.HealthCheckResponseMetrics, error) {
+	return c.metrics.HealthCheckMetrics(ctx, request)
 }
 
 func (c *ClientMetrics) FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error) {

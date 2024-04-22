@@ -36,6 +36,17 @@ message Trace {
   string host = 3; // The host that generated the trace
   // Reuse TraceCommon for common fields
   TraceCommon common = 4;
+  TracingMetrics metrics = 5;
+}
+
+message TracingMetrics {
+  string cpu_units = 1;
+  string memory_units = 2;
+  string name = 3;
+  int64 cpu_raw = 4;
+  int64 memory_raw = 5;
+  string cpu_human_readable = 6;
+  string memory_human_readable = 7;
 }
 
 message SpanStart {

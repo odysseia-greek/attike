@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/odysseia-greek/agora/aristoteles"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
+	sophokles "github.com/odysseia-greek/attike/sophokles/tragedy"
 	"google.golang.org/grpc"
 	"sync"
 	"time"
@@ -22,11 +23,13 @@ type TraceService interface {
 }
 
 type TraceServiceImpl struct {
-	PodName      string
-	Namespace    string
-	Index        string
-	Elastic      aristoteles.Client
-	StartTimeMap map[string]time.Time
+	PodName       string
+	Namespace     string
+	Index         string
+	Elastic       aristoteles.Client
+	Metrics       *sophokles.ClientMetrics
+	GatherMetrics bool
+	StartTimeMap  map[string]time.Time
 	pb.UnimplementedTraceServiceServer
 	mu sync.Mutex // Mutex to protect the task queue
 }
