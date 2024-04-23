@@ -3,28 +3,33 @@ package tragedy
 import (
 	"context"
 	"fmt"
+	"github.com/odysseia-greek/agora/plato/logging"
 	pb "github.com/odysseia-greek/attike/sophokles/proto"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
-func (m *MetricServiceImpl) HealthCheckMetrics(ctx context.Context, health *pb.EmptyMetrics) (*pb.HealthCheckResponseMetrics, error) {
+func (m *MetricServiceImpl) HealthCheck(ctx context.Context, health *pb.Empty) (*pb.HealthCheckResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	healthy := true
-	opts := v1.ListOptions{
-		Limit: 1,
+	pod, err := m.Kube.CoreV1().Pods(m.Namespace).Get(ctx, m.PodName, v1.GetOptions{})
+
+	response := &pb.HealthCheckResponse{
+		Healthy: true,
+		Status:  string(pod.Status.Phase),
 	}
-	_, err := m.Kube.CoreV1().Namespaces().List(ctx, opts)
 
 	if err != nil {
-		healthy = false
+		logging.Error(err.Error())
+		response.Healthy = false
+		response.Status = err.Error()
 	}
-	return &pb.HealthCheckResponseMetrics{Status: healthy}, nil
+
+	return response, nil
 }
 
-func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.MetricsResponse, error) {
+func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 

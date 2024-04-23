@@ -1,18 +1,18 @@
 syntax = "proto3";
 option go_package = "github.com/odysseia-greek/attike/sophokles/proto";
 
-package proto;
-
+package sophokles;
 
 service MetricsService {
-  rpc HealthCheckMetrics(EmptyMetrics) returns (HealthCheckResponseMetrics);
-  rpc FetchMetrics(EmptyMetrics) returns (MetricsResponse);
+  rpc HealthCheck(Empty) returns (HealthCheckResponse);
+  rpc FetchMetrics(Empty) returns (MetricsResponse);
 }
 
-message EmptyMetrics {}
+message Empty {}
 
-message HealthCheckResponseMetrics{
-  bool status = 1;
+message HealthCheckResponse {
+  bool healthy = 1;
+  string status = 2;
 }
 
 message MetricsResponse {

@@ -225,8 +225,8 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 		},
 	}
 
-	if t.GatherMetrics {
-		metrics, err := t.Metrics.FetchMetrics(ctx, &pbm.Empty{})
+	if t.GatherMetrics && t.Metrics != nil {
+		metrics, err := t.Metrics.FetchMetrics(ctx, &pbm.EmptyMetrics{})
 		if err != nil {
 			logging.Error(err.Error())
 		}

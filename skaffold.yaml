@@ -9,12 +9,12 @@ build:
   local:
     push: false
   artifacts:
-    - image: ghcr.io/odysseia-greek/aiskhylos
-      context: aiskhylos
+    - image: ghcr.io/odysseia-greek/sophokles
+      context: sophokles
       docker:
         target: prod
         buildArgs:
-          project_name: aiskhylos
+          project_name: sophokles
           TARGETOS: linux
           TARGETARCH: arm64
       sync:
@@ -24,6 +24,6 @@ build:
 
 manifests:
   rawYaml:
-    - aiskhylos/infra/manifest.yaml
+    - sophokles/infra/manifest.yaml
 profiles:
   - name: dev

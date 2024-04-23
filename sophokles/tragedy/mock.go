@@ -18,8 +18,8 @@ func (m *MockMetricsService) WaitForHealthyState() bool {
 	endTime := time.Now().Add(timeout)
 
 	for time.Now().Before(endTime) {
-		response, err := m.HealthCheckMetrics(context.Background(), &pb.EmptyMetrics{})
-		if err == nil && response.Status {
+		response, err := m.HealthCheck(context.Background(), &pb.Empty{})
+		if err == nil && response.Healthy {
 			return true
 		}
 
@@ -29,12 +29,12 @@ func (m *MockMetricsService) WaitForHealthyState() bool {
 	return false
 }
 
-func (m *MockMetricsService) HealthCheckMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.HealthCheckResponseMetrics, error) {
+func (m *MockMetricsService) HealthCheck(ctx context.Context, request *pb.Empty) (*pb.HealthCheckResponse, error) {
 	args := m.Called(ctx, request)
-	return args.Get(0).(*pb.HealthCheckResponseMetrics), args.Error(1)
+	return args.Get(0).(*pb.HealthCheckResponse), args.Error(1)
 }
 
-func (m *MockMetricsService) FetchMetrics(ctx context.Context, request *pb.EmptyMetrics) (*pb.MetricsResponse, error) {
+func (m *MockMetricsService) FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error) {
 	args := m.Called(ctx, request)
 	return args.Get(0).(*pb.MetricsResponse), args.Error(1)
 }

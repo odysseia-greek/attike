@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsServiceClient interface {
-	HealthCheckMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*HealthCheckResponseMetrics, error)
-	FetchMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*MetricsResponse, error)
+	HealthCheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error)
+	FetchMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error)
 }
 
 type metricsServiceClient struct {
@@ -34,18 +34,18 @@ func NewMetricsServiceClient(cc grpc.ClientConnInterface) MetricsServiceClient {
 	return &metricsServiceClient{cc}
 }
 
-func (c *metricsServiceClient) HealthCheckMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*HealthCheckResponseMetrics, error) {
-	out := new(HealthCheckResponseMetrics)
-	err := c.cc.Invoke(ctx, "/proto.MetricsService/HealthCheckMetrics", in, out, opts...)
+func (c *metricsServiceClient) HealthCheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error) {
+	out := new(HealthCheckResponse)
+	err := c.cc.Invoke(ctx, "/sophokles.MetricsService/HealthCheck", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricsServiceClient) FetchMetrics(ctx context.Context, in *EmptyMetrics, opts ...grpc.CallOption) (*MetricsResponse, error) {
+func (c *metricsServiceClient) FetchMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error) {
 	out := new(MetricsResponse)
-	err := c.cc.Invoke(ctx, "/proto.MetricsService/FetchMetrics", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/sophokles.MetricsService/FetchMetrics", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +56,8 @@ func (c *metricsServiceClient) FetchMetrics(ctx context.Context, in *EmptyMetric
 // All implementations must embed UnimplementedMetricsServiceServer
 // for forward compatibility
 type MetricsServiceServer interface {
-	HealthCheckMetrics(context.Context, *EmptyMetrics) (*HealthCheckResponseMetrics, error)
-	FetchMetrics(context.Context, *EmptyMetrics) (*MetricsResponse, error)
+	HealthCheck(context.Context, *Empty) (*HealthCheckResponse, error)
+	FetchMetrics(context.Context, *Empty) (*MetricsResponse, error)
 	mustEmbedUnimplementedMetricsServiceServer()
 }
 
@@ -65,10 +65,10 @@ type MetricsServiceServer interface {
 type UnimplementedMetricsServiceServer struct {
 }
 
-func (UnimplementedMetricsServiceServer) HealthCheckMetrics(context.Context, *EmptyMetrics) (*HealthCheckResponseMetrics, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method HealthCheckMetrics not implemented")
+func (UnimplementedMetricsServiceServer) HealthCheck(context.Context, *Empty) (*HealthCheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
 }
-func (UnimplementedMetricsServiceServer) FetchMetrics(context.Context, *EmptyMetrics) (*MetricsResponse, error) {
+func (UnimplementedMetricsServiceServer) FetchMetrics(context.Context, *Empty) (*MetricsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchMetrics not implemented")
 }
 func (UnimplementedMetricsServiceServer) mustEmbedUnimplementedMetricsServiceServer() {}
@@ -84,26 +84,26 @@ func RegisterMetricsServiceServer(s grpc.ServiceRegistrar, srv MetricsServiceSer
 	s.RegisterService(&MetricsService_ServiceDesc, srv)
 }
 
-func _MetricsService_HealthCheckMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyMetrics)
+func _MetricsService_HealthCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetricsServiceServer).HealthCheckMetrics(ctx, in)
+		return srv.(MetricsServiceServer).HealthCheck(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetricsService/HealthCheckMetrics",
+		FullMethod: "/sophokles.MetricsService/HealthCheck",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServiceServer).HealthCheckMetrics(ctx, req.(*EmptyMetrics))
+		return srv.(MetricsServiceServer).HealthCheck(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _MetricsService_FetchMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyMetrics)
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -112,10 +112,10 @@ func _MetricsService_FetchMetrics_Handler(srv interface{}, ctx context.Context, 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetricsService/FetchMetrics",
+		FullMethod: "/sophokles.MetricsService/FetchMetrics",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServiceServer).FetchMetrics(ctx, req.(*EmptyMetrics))
+		return srv.(MetricsServiceServer).FetchMetrics(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -124,12 +124,12 @@ func _MetricsService_FetchMetrics_Handler(srv interface{}, ctx context.Context, 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MetricsService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.MetricsService",
+	ServiceName: "sophokles.MetricsService",
 	HandlerType: (*MetricsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "HealthCheckMetrics",
-			Handler:    _MetricsService_HealthCheckMetrics_Handler,
+			MethodName: "HealthCheck",
+			Handler:    _MetricsService_HealthCheck_Handler,
 		},
 		{
 			MethodName: "FetchMetrics",

@@ -4,13 +4,13 @@
 ## Table of Contents
 
 - [sophokles.proto](#sophokles-proto)
-    - [ContainerMetrics](#proto-ContainerMetrics)
-    - [Empty](#proto-Empty)
-    - [HealthCheckResponse](#proto-HealthCheckResponse)
-    - [MetricsResponse](#proto-MetricsResponse)
-    - [PodMetrics](#proto-PodMetrics)
+    - [ContainerMetrics](#sophokles-ContainerMetrics)
+    - [Empty](#sophokles-Empty)
+    - [HealthCheckResponse](#sophokles-HealthCheckResponse)
+    - [MetricsResponse](#sophokles-MetricsResponse)
+    - [PodMetrics](#sophokles-PodMetrics)
   
-    - [MetricsService](#proto-MetricsService)
+    - [MetricsService](#sophokles-MetricsService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -23,7 +23,7 @@
 
 
 
-<a name="proto-ContainerMetrics"></a>
+<a name="sophokles-ContainerMetrics"></a>
 
 ### ContainerMetrics
 
@@ -42,7 +42,7 @@
 
 
 
-<a name="proto-Empty"></a>
+<a name="sophokles-Empty"></a>
 
 ### Empty
 
@@ -52,7 +52,7 @@
 
 
 
-<a name="proto-HealthCheckResponse"></a>
+<a name="sophokles-HealthCheckResponse"></a>
 
 ### HealthCheckResponse
 
@@ -60,14 +60,15 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [bool](#bool) |  |  |
+| healthy | [bool](#bool) |  |  |
+| status | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="proto-MetricsResponse"></a>
+<a name="sophokles-MetricsResponse"></a>
 
 ### MetricsResponse
 
@@ -75,7 +76,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| pod | [PodMetrics](#proto-PodMetrics) |  |  |
+| pod | [PodMetrics](#sophokles-PodMetrics) |  |  |
 | cpu_units | [string](#string) |  |  |
 | memory_units | [string](#string) |  |  |
 
@@ -84,7 +85,7 @@
 
 
 
-<a name="proto-PodMetrics"></a>
+<a name="sophokles-PodMetrics"></a>
 
 ### PodMetrics
 
@@ -97,7 +98,7 @@
 | memory_raw | [int64](#int64) |  |  |
 | cpu_human_readable | [string](#string) |  |  |
 | memory_human_readable | [string](#string) |  |  |
-| containers | [ContainerMetrics](#proto-ContainerMetrics) | repeated |  |
+| containers | [ContainerMetrics](#sophokles-ContainerMetrics) | repeated |  |
 
 
 
@@ -110,15 +111,15 @@
  
 
 
-<a name="proto-MetricsService"></a>
+<a name="sophokles-MetricsService"></a>
 
 ### MetricsService
 
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| HealthCheck | [Empty](#proto-Empty) | [HealthCheckResponse](#proto-HealthCheckResponse) |  |
-| FetchMetrics | [Empty](#proto-Empty) | [MetricsResponse](#proto-MetricsResponse) |  |
+| HealthCheck | [Empty](#sophokles-Empty) | [HealthCheckResponse](#sophokles-HealthCheckResponse) |  |
+| FetchMetrics | [Empty](#sophokles-Empty) | [MetricsResponse](#sophokles-MetricsResponse) |  |
 
  
 

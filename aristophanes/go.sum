@@ -125,8 +125,8 @@ github.com/odysseia-greek/agora/plato v0.1.15 h1:Ex3j/7k6uEOMovV2t7idoijRks4mOez
 github.com/odysseia-greek/agora/plato v0.1.15/go.mod h1:P+HXT0Jy1tggm/6SD2f58AEVT+lEvrpxlbKtqTZZrB8=
 github.com/odysseia-greek/agora/thales v0.1.9 h1:bDLNiqkMgcuUFUnfnC2yf5vXKurs/CxKBLllu65q2qQ=
 github.com/odysseia-greek/agora/thales v0.1.9/go.mod h1:/Pk3exLO78YdFvJ9XkbhOCfRZeWZTIbcxfOGSDzUwdM=
-github.com/odysseia-greek/attike/sophokles v0.0.3 h1:m35ScuTSgIp79pdg9I+guOZ2mGOvzq5Ghnb9vfpwmK4=
-github.com/odysseia-greek/attike/sophokles v0.0.3/go.mod h1:o5jkqkymZ5Qh2VqjAsHn554KTNuipHYHqeAmN2UTd4Q=
+github.com/odysseia-greek/attike/sophokles v0.0.4 h1:yIMRX6U5WOJfKmFhr0Utg5AfxPTBbrcOx1CmrKBoJR0=
+github.com/odysseia-greek/attike/sophokles v0.0.4/go.mod h1:o5jkqkymZ5Qh2VqjAsHn554KTNuipHYHqeAmN2UTd4Q=
 github.com/onsi/ginkgo/v2 v2.13.0 h1:0jY9lJquiL8fcf3M4LAXN5aMlS/b2BV86HFFPCPMgE4=
 github.com/onsi/ginkgo/v2 v2.13.0/go.mod h1:TE309ZR8s5FsKKpuB1YAQYBzCaAfUgatB/xlT/ETL/o=
 github.com/onsi/gomega v1.29.0 h1:KIA/t2t5UBzoirT4H9tsML45GEbo3ouUnBHsCfD2tVg=

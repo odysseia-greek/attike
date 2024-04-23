@@ -1,6 +1,0 @@
-GRPC localhost:50053/proto.MetricsService/FetchMetrics
-
-{
-  "pod_name": "alexandros-6cd856f7c4-c69bn",
-  "namespace": "odysseia"
-}
