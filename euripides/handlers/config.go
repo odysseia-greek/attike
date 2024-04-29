@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/odysseia-greek/agora/aristoteles"
 	"github.com/odysseia-greek/agora/aristoteles/models"
@@ -12,6 +13,7 @@ import (
 	pb "github.com/odysseia-greek/delphi/ptolemaios/proto"
 	"google.golang.org/grpc/metadata"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -94,9 +96,15 @@ func CreateNewConfig(env string) (*EuripidesHandler, error) {
 		}
 	}
 
-	index := config.StringFromEnv(config.EnvIndex, defaultIndex)
+	index := config.StringFromEnv(config.EnvIndex, "tracing;metrics")
+	splitIndex := strings.Split(index, ";")
+	if len(splitIndex) == 1 {
+		return nil, fmt.Errorf("cannot find second index")
+	}
+
 	return &EuripidesHandler{
-		Index:   index,
-		Elastic: elastic,
+		TracingIndex: splitIndex[0],
+		MetricsIndex: splitIndex[1],
+		Elastic:      elastic,
 	}, nil
 }

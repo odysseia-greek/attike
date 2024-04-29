@@ -60,3 +60,13 @@ GRPC localhost:50052/proto.TraceService/DatabaseSpan
 
 ###
 GRPC localhost:50052/proto.TraceService/HealthCheck
+
+
+### Sophokles health
+GRPC localhost:50053/proto.MetricsService/HealthCheck
+
+{
+}
+
+### Sophokles metrics
+GRPC localhost:50053/proto.MetricsService/FetchMetrics

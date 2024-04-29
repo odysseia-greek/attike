@@ -4,23 +4,27 @@
 ## Table of Contents
 
 - [aristophanes.proto](#aristophanes-proto)
-    - [CloseTraceRequest](#proto-CloseTraceRequest)
-    - [DatabaseSpan](#proto-DatabaseSpan)
-    - [DatabaseSpanRequest](#proto-DatabaseSpanRequest)
-    - [Empty](#proto-Empty)
-    - [HealthCheckResponse](#proto-HealthCheckResponse)
-    - [Span](#proto-Span)
-    - [SpanRequest](#proto-SpanRequest)
-    - [StartSpanRequest](#proto-StartSpanRequest)
-    - [StartTraceRequest](#proto-StartTraceRequest)
-    - [Trace](#proto-Trace)
-    - [TraceCommon](#proto-TraceCommon)
-    - [TraceRequest](#proto-TraceRequest)
-    - [TraceResponse](#proto-TraceResponse)
-    - [TraceStart](#proto-TraceStart)
-    - [TraceStop](#proto-TraceStop)
+    - [CloseSpanRequest](#aristophanes-CloseSpanRequest)
+    - [CloseTraceRequest](#aristophanes-CloseTraceRequest)
+    - [DatabaseSpan](#aristophanes-DatabaseSpan)
+    - [DatabaseSpanRequest](#aristophanes-DatabaseSpanRequest)
+    - [Empty](#aristophanes-Empty)
+    - [HealthCheckResponse](#aristophanes-HealthCheckResponse)
+    - [Span](#aristophanes-Span)
+    - [SpanRequest](#aristophanes-SpanRequest)
+    - [SpanStart](#aristophanes-SpanStart)
+    - [SpanStop](#aristophanes-SpanStop)
+    - [StartSpanRequest](#aristophanes-StartSpanRequest)
+    - [StartTraceRequest](#aristophanes-StartTraceRequest)
+    - [Trace](#aristophanes-Trace)
+    - [TraceCommon](#aristophanes-TraceCommon)
+    - [TraceRequest](#aristophanes-TraceRequest)
+    - [TraceResponse](#aristophanes-TraceResponse)
+    - [TraceStart](#aristophanes-TraceStart)
+    - [TraceStop](#aristophanes-TraceStop)
+    - [TracingMetrics](#aristophanes-TracingMetrics)
   
-    - [TraceService](#proto-TraceService)
+    - [TraceService](#aristophanes-TraceService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -33,7 +37,25 @@
 
 
 
-<a name="proto-CloseTraceRequest"></a>
+<a name="aristophanes-CloseSpanRequest"></a>
+
+### CloseSpanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| trace_id | [string](#string) |  | Root trace_id which where item will be added |
+| parent_span_id | [string](#string) |  | The root parent_span_id |
+| span_id | [string](#string) |  |  |
+| response_code | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-CloseTraceRequest"></a>
 
 ### CloseTraceRequest
 
@@ -51,7 +73,7 @@
 
 
 
-<a name="proto-DatabaseSpan"></a>
+<a name="aristophanes-DatabaseSpan"></a>
 
 ### DatabaseSpan
 
@@ -60,15 +82,18 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | query | [string](#string) |  | Database query statement |
-| result_json | [string](#string) |  | Query result data as JSON string |
-| common | [TraceCommon](#proto-TraceCommon) |  | Reuse TraceCommon for common fields |
+| time_started | [string](#string) |  | Reuse TraceCommon for common fields |
+| time_finished | [string](#string) |  |  |
+| hits | [int64](#int64) |  |  |
+| took | [string](#string) |  |  |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  |  |
 
 
 
 
 
 
-<a name="proto-DatabaseSpanRequest"></a>
+<a name="aristophanes-DatabaseSpanRequest"></a>
 
 ### DatabaseSpanRequest
 
@@ -80,14 +105,15 @@
 | parent_span_id | [string](#string) |  | The root parent_span_id |
 | action | [string](#string) |  | Action performed in the span |
 | query | [string](#string) |  | Database query statement |
-| result_json | [string](#string) |  | Query result data as JSON string |
+| hits | [int64](#int64) |  | Query result data as JSON string |
+| time_took | [int64](#int64) |  |  |
 
 
 
 
 
 
-<a name="proto-Empty"></a>
+<a name="aristophanes-Empty"></a>
 
 ### Empty
 
@@ -97,7 +123,7 @@
 
 
 
-<a name="proto-HealthCheckResponse"></a>
+<a name="aristophanes-HealthCheckResponse"></a>
 
 ### HealthCheckResponse
 
@@ -112,7 +138,7 @@
 
 
 
-<a name="proto-Span"></a>
+<a name="aristophanes-Span"></a>
 
 ### Span
 
@@ -121,16 +147,15 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | action | [string](#string) |  | Action performed in the span |
-| request_body | [string](#string) |  | Optional: Request body data |
-| response_body | [string](#string) |  | Optional: Response body data |
-| common | [TraceCommon](#proto-TraceCommon) |  | Reuse TraceCommon for common fields |
+| request_body | [string](#string) |  |  |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  |  |
 
 
 
 
 
 
-<a name="proto-SpanRequest"></a>
+<a name="aristophanes-SpanRequest"></a>
 
 ### SpanRequest
 
@@ -141,15 +166,48 @@
 | trace_id | [string](#string) |  | Root trace_id which where item will be added |
 | parent_span_id | [string](#string) |  | The root parent_span_id |
 | action | [string](#string) |  | Action performed in the span |
+
+
+
+
+
+
+<a name="aristophanes-SpanStart"></a>
+
+### SpanStart
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  | Action performed in the span |
 | request_body | [string](#string) |  | Optional: Request body data |
-| response_body | [string](#string) |  | Optional: Response body data |
+| time_started | [string](#string) |  |  |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
 
 
 
 
 
 
-<a name="proto-StartSpanRequest"></a>
+<a name="aristophanes-SpanStop"></a>
+
+### SpanStop
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| response_code | [int32](#int32) |  |  |
+| time_finished | [string](#string) |  |  |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-StartSpanRequest"></a>
 
 ### StartSpanRequest
 
@@ -158,13 +216,16 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | trace_id | [string](#string) |  | Root trace_id which where item will be added |
+| parent_span_id | [string](#string) |  | The root parent_span_id |
+| action | [string](#string) |  | Action performed in the span |
+| request_body | [string](#string) |  | Optional: Request body data |
 
 
 
 
 
 
-<a name="proto-StartTraceRequest"></a>
+<a name="aristophanes-StartTraceRequest"></a>
 
 ### StartTraceRequest
 
@@ -184,7 +245,7 @@
 
 
 
-<a name="proto-Trace"></a>
+<a name="aristophanes-Trace"></a>
 
 ### Trace
 
@@ -195,14 +256,15 @@
 | method | [string](#string) |  | GET POST PUT, etc. |
 | url | [string](#string) |  | The URL called by a client |
 | host | [string](#string) |  | The host that generated the trace |
-| common | [TraceCommon](#proto-TraceCommon) |  | Reuse TraceCommon for common fields |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
+| metrics | [TracingMetrics](#aristophanes-TracingMetrics) |  |  |
 
 
 
 
 
 
-<a name="proto-TraceCommon"></a>
+<a name="aristophanes-TraceCommon"></a>
 
 ### TraceCommon
 Common message used in various trace-related messages
@@ -222,7 +284,7 @@ Common message used in various trace-related messages
 
 
 
-<a name="proto-TraceRequest"></a>
+<a name="aristophanes-TraceRequest"></a>
 
 ### TraceRequest
 
@@ -241,7 +303,7 @@ Common message used in various trace-related messages
 
 
 
-<a name="proto-TraceResponse"></a>
+<a name="aristophanes-TraceResponse"></a>
 
 ### TraceResponse
 
@@ -256,7 +318,7 @@ Common message used in various trace-related messages
 
 
 
-<a name="proto-TraceStart"></a>
+<a name="aristophanes-TraceStart"></a>
 
 ### TraceStart
 
@@ -270,14 +332,14 @@ Common message used in various trace-related messages
 | remote_address | [string](#string) |  | Remote address of the client |
 | operation | [string](#string) |  | Graphql operation that generated Trace start |
 | root_query | [string](#string) |  | Graphql Root Query |
-| common | [TraceCommon](#proto-TraceCommon) |  | Reuse TraceCommon for common fields |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
 
 
 
 
 
 
-<a name="proto-TraceStop"></a>
+<a name="aristophanes-TraceStop"></a>
 
 ### TraceStop
 
@@ -286,7 +348,28 @@ Common message used in various trace-related messages
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | response_body | [string](#string) |  | The response generated when a 200 is returned |
-| common | [TraceCommon](#proto-TraceCommon) |  | Reuse TraceCommon for common fields |
+| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
+
+
+
+
+
+
+<a name="aristophanes-TracingMetrics"></a>
+
+### TracingMetrics
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| cpu_units | [string](#string) |  |  |
+| memory_units | [string](#string) |  |  |
+| name | [string](#string) |  |  |
+| cpu_raw | [int64](#int64) |  |  |
+| memory_raw | [int64](#int64) |  |  |
+| cpu_human_readable | [string](#string) |  |  |
+| memory_human_readable | [string](#string) |  |  |
 
 
 
@@ -299,20 +382,21 @@ Common message used in various trace-related messages
  
 
 
-<a name="proto-TraceService"></a>
+<a name="aristophanes-TraceService"></a>
 
 ### TraceService
 The TraceService service provides operations for managing and tracking traces and spans.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| StartTrace | [StartTraceRequest](#proto-StartTraceRequest) | [TraceResponse](#proto-TraceResponse) | Start a new trace. |
-| Trace | [TraceRequest](#proto-TraceRequest) | [TraceResponse](#proto-TraceResponse) | Record a new trace within an existing trace. |
-| StartNewSpan | [StartSpanRequest](#proto-StartSpanRequest) | [TraceResponse](#proto-TraceResponse) | Start a new span within an existing trace. |
-| Span | [SpanRequest](#proto-SpanRequest) | [TraceResponse](#proto-TraceResponse) | Record a span with details of an action performed. |
-| DatabaseSpan | [DatabaseSpanRequest](#proto-DatabaseSpanRequest) | [TraceResponse](#proto-TraceResponse) | Record a span related to a database query. |
-| CloseTrace | [CloseTraceRequest](#proto-CloseTraceRequest) | [TraceResponse](#proto-TraceResponse) | Close an existing trace. |
-| HealthCheck | [Empty](#proto-Empty) | [HealthCheckResponse](#proto-HealthCheckResponse) |  |
+| StartTrace | [StartTraceRequest](#aristophanes-StartTraceRequest) | [TraceResponse](#aristophanes-TraceResponse) | Start a new trace. |
+| Trace | [TraceRequest](#aristophanes-TraceRequest) | [TraceResponse](#aristophanes-TraceResponse) | Record a new trace within an existing trace. |
+| StartSpan | [StartSpanRequest](#aristophanes-StartSpanRequest) | [TraceResponse](#aristophanes-TraceResponse) | Start a new span within an existing trace. |
+| Span | [SpanRequest](#aristophanes-SpanRequest) | [TraceResponse](#aristophanes-TraceResponse) | Record a span with details of an action performed. |
+| CloseSpan | [CloseSpanRequest](#aristophanes-CloseSpanRequest) | [TraceResponse](#aristophanes-TraceResponse) | Close an existing Span |
+| DatabaseSpan | [DatabaseSpanRequest](#aristophanes-DatabaseSpanRequest) | [TraceResponse](#aristophanes-TraceResponse) | Record a span related to a database query. |
+| CloseTrace | [CloseTraceRequest](#aristophanes-CloseTraceRequest) | [TraceResponse](#aristophanes-TraceResponse) | Close an existing trace. |
+| HealthCheck | [Empty](#aristophanes-Empty) | [HealthCheckResponse](#aristophanes-HealthCheckResponse) |  |
 
  
 

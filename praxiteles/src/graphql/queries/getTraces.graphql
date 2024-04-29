@@ -20,15 +20,24 @@ query GetTraces($input: TraceQueryInput!) {
 				itemType
 				operation
 				rootQuery
+				metrics {
+					cpuHumanReadable
+					memoryHumanReadable
+					cpuRaw
+					memoryRaw
+				}
 			}
 			... on Span {
 				parentSpanID
+				spanID
 				namespace
 				timestamp
 				podName
 				itemType
 				action
-				responseBody
+				timeStarted
+				timeFinished
+				responseCode
 			}
 			... on DatabaseSpan {
 				parentSpanID
@@ -38,6 +47,10 @@ query GetTraces($input: TraceQueryInput!) {
 				namespace
 				timestamp
 				podName
+				timeStarted
+				timeFinished
+				took
+				hits
 			}
 		}
 	}

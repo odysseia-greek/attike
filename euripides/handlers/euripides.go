@@ -5,12 +5,30 @@ import (
 	"fmt"
 	"github.com/odysseia-greek/agora/aristoteles"
 	elasticModels "github.com/odysseia-greek/agora/aristoteles/models"
-	"log"
+	"github.com/odysseia-greek/agora/plato/logging"
+	"time"
 )
 
 type EuripidesHandler struct {
-	Elastic aristoteles.Client
-	Index   string
+	Elastic      aristoteles.Client
+	TracingIndex string
+	MetricsIndex string
+}
+
+func (e *EuripidesHandler) Metrics(input map[string]interface{}) (*elasticModels.Hits, error) {
+	var query map[string]interface{}
+	var err error
+
+	query, err = e.createMetricsQuery(input)
+
+	jsonQuery, _ := json.Marshal(query)
+	logging.Debug(string(jsonQuery))
+	response, err := e.Elastic.Query().MatchWithScroll(e.MetricsIndex, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.Hits, nil
 }
 
 func (e *EuripidesHandler) Tracing(input map[string]interface{}) (*elasticModels.Hits, error) {
@@ -20,15 +38,15 @@ func (e *EuripidesHandler) Tracing(input map[string]interface{}) (*elasticModels
 	if len(input) == 0 {
 		query = e.Elastic.Builder().MatchAll()
 	} else {
-		query, err = e.filterInputToQuery(input)
+		query, err = e.createTracingQuery(input)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	jsonQuery, _ := json.Marshal(query)
-	log.Print(string(jsonQuery))
-	response, err := e.Elastic.Query().MatchWithScroll(e.Index, query)
+	logging.Debug(string(jsonQuery))
+	response, err := e.Elastic.Query().MatchWithScroll(e.TracingIndex, query)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +54,57 @@ func (e *EuripidesHandler) Tracing(input map[string]interface{}) (*elasticModels
 	return &response.Hits, nil
 }
 
-func (e *EuripidesHandler) filterInputToQuery(input map[string]interface{}) (map[string]interface{}, error) {
+func (e *EuripidesHandler) createMetricsQuery(input map[string]interface{}) (map[string]interface{}, error) {
+	endTime := time.Now().UTC()
+	beginTime := endTime.Add(-1 * time.Hour) // Going back one hour from current time
+
+	if beginTimeString, ok := input["beginTime"].(string); ok {
+		if parsedTime, err := time.Parse("2006-01-02T15:04:05.000", beginTimeString); err == nil {
+			beginTime = parsedTime
+		}
+	}
+	if endTimeString, ok := input["endTime"].(string); ok {
+		if parsedTime, err := time.Parse("2006-01-02T15:04:05.000", endTimeString); err == nil {
+			endTime = parsedTime
+		}
+	}
+
+	// Default sorting order
+	order := "desc"
+	if orderInput, ok := input["order"].(string); ok {
+		if orderInput == "asc" || orderInput == "desc" {
+			order = orderInput
+		}
+	}
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": []interface{}{
+					map[string]interface{}{
+						"range": map[string]interface{}{
+							"timeStamp": map[string]interface{}{
+								"gte": beginTime.Format("2006-01-02T15:04:05.000"),
+								"lte": endTime.Format("2006-01-02T15:04:05.000"),
+							},
+						},
+					},
+				},
+			},
+		},
+		"sort": []interface{}{
+			map[string]interface{}{
+				"timeStamp": map[string]interface{}{
+					"order": order,
+				},
+			},
+		},
+	}
+
+	return query, nil
+}
+
+func (e *EuripidesHandler) createTracingQuery(input map[string]interface{}) (map[string]interface{}, error) {
 	// Create a query map
 	query := make(map[string]interface{})
 
@@ -108,7 +176,7 @@ func (e *EuripidesHandler) filterInputToQuery(input map[string]interface{}) (map
 			// Create a wildcard filter for "items.pod_name"
 			podNameFilter = map[string]interface{}{
 				"wildcard": map[string]interface{}{
-					"items.pod_name": fmt.Sprintf("%s*", podName),
+					"items.common.pod_name.keyword": fmt.Sprintf("%s*", podName),
 				},
 			}
 		}
@@ -165,11 +233,13 @@ func (e *EuripidesHandler) filterInputToQuery(input map[string]interface{}) (map
 		}
 	}
 
-	// Add the filter to the query
-	query["bool"] = map[string]interface{}{
-		"filter": []map[string]interface{}{
-			filter,
-		},
+	if len(filter) > 0 {
+		// Add the filter to the query
+		query["bool"] = map[string]interface{}{
+			"filter": []map[string]interface{}{
+				filter,
+			},
+		}
 	}
 
 	return map[string]interface{}{"query": query}, nil

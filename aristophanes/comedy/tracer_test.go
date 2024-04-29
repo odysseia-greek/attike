@@ -120,35 +120,6 @@ func TestTraceServiceStartAndClose(t *testing.T) {
 func TestCreateItemTypes(t *testing.T) {
 	startTimeMap := make(map[string]time.Time)
 
-	t.Run("StartNewSpan", func(t *testing.T) {
-		fixtureFiles := []string{"info"}
-		mockCode := 200
-		mockElasticClient, err := aristoteles.NewMockClient(fixtureFiles, mockCode)
-		assert.Nil(t, err)
-		request := &pb.StartSpanRequest{
-			TraceId: "841a4f73-ba5b-4c38-9237-e1ad91459028",
-		}
-
-		// Create the handler using the mock
-		handler := &TraceServiceImpl{
-			PodName:      "testpod",
-			Namespace:    "testnamespace",
-			Index:        "test",
-			Elastic:      mockElasticClient,
-			StartTimeMap: startTimeMap,
-		}
-
-		// Call the method being tested
-		response, err := handler.StartNewSpan(context.Background(), request)
-
-		// Check expectations and assertions
-		assert.Nil(t, err)
-		assert.NotNil(t, response)
-
-		split := ValidateInput(response.CombinedId)
-		assert.Nil(t, split)
-	})
-
 	t.Run("CreateDatabaseSpan", func(t *testing.T) {
 		fixtureFiles := []string{"info"}
 		mockCode := 200
@@ -189,8 +160,6 @@ func TestCreateItemTypes(t *testing.T) {
 			TraceId:      "841a4f73-ba5b-4c38-9237-e1ad91459028",
 			ParentSpanId: "70b993de1e2f879d",
 			Action:       "query",
-			RequestBody:  "{}",
-			ResponseBody: "{ \"sentenceId\": \"EmUfwX8BFAEUBcEdfSb7Ty\", \"answerSentence\": \"i have tried\",\"author\": \"plato\" }",
 		}
 
 		// Create the handler using the mock

@@ -1,0 +1,25 @@
+# getMetricsRaw.graphql
+query GetMetrics($input: MetricsQueryInput!)  {
+    metrics(input: $input)  {
+        timeStarted
+        timeEnded
+        timeStamps
+        nodes{
+            nodeName
+            cpuRaw
+            memoryRaw
+            cpuPercentage
+            memoryPercentage
+        }
+        grouped{
+            name
+            cpuRaw
+            memoryRaw
+        }
+        pods{
+            name
+            cpuRaw
+            memoryRaw
+        }
+    }
+}

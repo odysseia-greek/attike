@@ -44,7 +44,12 @@ func (m *MockTraceService) Trace(ctx context.Context, request *pb.TraceRequest) 
 	return args.Get(0).(*pb.TraceResponse), args.Error(1)
 }
 
-func (m *MockTraceService) StartNewSpan(ctx context.Context, request *pb.StartSpanRequest) (*pb.TraceResponse, error) {
+func (m *MockTraceService) StartSpan(ctx context.Context, request *pb.StartSpanRequest) (*pb.TraceResponse, error) {
+	args := m.Called(request)
+	return args.Get(0).(*pb.TraceResponse), args.Error(1)
+}
+
+func (m *MockTraceService) CloseSpan(ctx context.Context, request *pb.CloseSpanRequest) (*pb.TraceResponse, error) {
 	args := m.Called(request)
 	return args.Get(0).(*pb.TraceResponse), args.Error(1)
 }

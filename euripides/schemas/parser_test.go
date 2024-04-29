@@ -1,7 +1,7 @@
 package schemas
 
 import (
-	"github.com/odysseia-greek/aristoteles/models"
+	"github.com/odysseia-greek/agora/aristoteles/models"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -39,7 +39,7 @@ func TestParseHitsToGraphql(t *testing.T) {
 	}
 
 	// Call the function to be tested
-	traces := parseHitsToGraphql(hits)
+	traces := parseTracesToGraphql(hits)
 
 	// Use testify/assert for assertions
 	assert := assert.New(t)

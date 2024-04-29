@@ -64,9 +64,6 @@ var databaseSpanType = graphql.NewObject(graphql.ObjectConfig{
 		"parentSpanID": &graphql.Field{
 			Type: graphql.String,
 		},
-		"resultJSON": &graphql.Field{
-			Type: graphql.String,
-		},
 		"spanID": &graphql.Field{
 			Type: graphql.String,
 		},
@@ -85,6 +82,18 @@ var databaseSpanType = graphql.NewObject(graphql.ObjectConfig{
 		"podName": &graphql.Field{
 			Type: graphql.String,
 		},
+		"took": &graphql.Field{
+			Type: graphql.String,
+		},
+		"hits": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"timeFinished": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timeStarted": &graphql.Field{
+			Type: graphql.String,
+		},
 	},
 })
 
@@ -96,9 +105,6 @@ var spanType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"requestBody": &graphql.Field{
-			Type: graphql.String,
-		},
-		"responseBody": &graphql.Field{
 			Type: graphql.String,
 		},
 		"spanID": &graphql.Field{
@@ -118,6 +124,15 @@ var spanType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"podName": &graphql.Field{
 			Type: graphql.String,
+		},
+		"timeFinished": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timeStarted": &graphql.Field{
+			Type: graphql.String,
+		},
+		"responseCode": &graphql.Field{
+			Type: graphql.Int,
 		},
 	},
 })
@@ -157,6 +172,33 @@ var traceType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"rootQuery": &graphql.Field{
+			Type: graphql.String,
+		},
+		"metrics": &graphql.Field{
+			Type: tracingMetrics,
+		},
+	},
+})
+
+var tracingMetrics = graphql.NewObject(graphql.ObjectConfig{
+	Name: "tracingMetrics",
+	Fields: graphql.Fields{
+		"cpuRaw": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"memoryRaw": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"cpuHumanReadable": &graphql.Field{
+			Type: graphql.String,
+		},
+		"memoryHumanReadable": &graphql.Field{
+			Type: graphql.String,
+		},
+		"memoryUnits": &graphql.Field{
+			Type: graphql.String,
+		},
+		"cpuUnits": &graphql.Field{
 			Type: graphql.String,
 		},
 	},

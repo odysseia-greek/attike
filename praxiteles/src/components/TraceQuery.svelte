@@ -5,20 +5,51 @@
     import traceQuery from '../graphql/queries/getTraces.graphql';
     import JSONViewWrapper from './JSONViewWrapper.svelte'; // Import the JSONViewWrapper component
     import SearchFilter from "./SearchFilter.svelte";
-    import client from "../graphql/client.js"; // Import the client
-
+    import client from "../graphql/client.js";
+    import Diagram from "./Diagram.svelte"
     // Define your GraphQL query
     const GET_TRACES = gql`${traceQuery}`;
 
     // Declare a variable to store the query result
     let queryResult = null; // Declare queryResult here
+    let ganntContent = null;
+    let stateChartContent = null;
+    let podMetricsMemory = null;
+    let podMetricsCpu = null;
 
     // Function to handle the query result
-    function handleQueryResult(result) {
-        // The query result is available in the result variable
-        // You can access data using result.data
+    function handleQueryResult(result, filters) {
         queryResult = result.data; // Assign the result to queryResult
+        if (result.data.traces && result.data.traces.length > 0) {
+            // Handle other diagram generation that does not depend on podName
+            let jsonResult = JSON.stringify(result.data.traces[0], null, 2);
+            ganntContent = convertTraceToGannt(jsonResult);
+            stateChartContent = convertTraceToStateDiagram(jsonResult);
+        }
+
+        if (filters.podName) {
+            let allItems = result.data.traces.flatMap(trace => trace.items);
+
+            let filteredItems = allItems.filter(item =>
+                item.itemType === 'trace' &&
+                item.podName === filters.podName &&
+                'metrics' in item &&
+                item.metrics != null
+            );
+
+            let sortedItems = filteredItems.sort((a, b) => {
+                const dateA = new Date(a.timestamp.replace('T', ' '));
+                const dateB = new Date(b.timestamp.replace('T', ' '));
+                return dateA - dateB;
+            });
+
+            // Generate line chart if there are traces for the specified podName
+            if (sortedItems.length > 0) {
+                createLineDiagram(sortedItems); // Generate line chart
+            }
+        }
     }
+
 
     // Create a Promise-based function to handle the GraphQL query
     async function handleQueryWithFilters(filters) {
@@ -34,7 +65,7 @@
         });
 
         // Call the function to handle the query result
-        handleQueryResult(result);
+        handleQueryResult(result, filters);
     }
 
     // Listen for the custom event and handle it
@@ -45,55 +76,180 @@
         // Call the Promise-based function to handle the GraphQL query
         handleQueryWithFilters(filters);
     });
+    function convertTraceToStateDiagram(traceData) {
+        let traceDataParsed = JSON.parse(traceData);
+
+        let diagram = `---\nState Diagram for ${traceDataParsed.traceID}\n---\n`;
+        diagram += 'stateDiagram-v2\n';
+
+        // Create a mapping of spanID to podName for all spans
+        let spanIdToPodName = {};
+        traceDataParsed.items.filter(item => item.itemType === 'span').forEach(span => {
+            spanIdToPodName[span.spanID] = span.podName.split('-')[0];
+        });
+
+        let firstServicePodName = "";
+        // Initialize the diagram with the first service
+        if (traceDataParsed.items.length > 0 && traceDataParsed.items[0].itemType === 'trace') {
+            firstServicePodName = traceDataParsed.items[0].podName.split('-')[0];
+            if (firstServicePodName) {
+                diagram += `    [*] --> ${firstServicePodName}\n`;
+            }
+        }
+
+        let firstTransitionAdded = false;
+
+        // Iterate through traces to create transitions based on parentSpanID -> spanID mapping
+        traceDataParsed.items.filter(item => item.itemType === 'trace').forEach(trace => {
+            const parentService = spanIdToPodName[trace.parentSpanID];
+            const childService = trace.podName.split('-')[0]; // Directly use trace podName if no spanID -> podName mapping
+
+            // Add transition if parentService is identified
+            if (parentService && childService) {
+                const transition = `    ${parentService} --> ${childService}`;
+                diagram += `${transition}\n`;
+
+                // Add the missing link between the firstServicePodName and the first parentService
+                if (!firstTransitionAdded && firstServicePodName && firstServicePodName !== childService) {
+                    diagram += `    ${firstServicePodName} --> ${parentService}\n`;
+                    firstTransitionAdded = true; // Ensure this transition is only added once
+                }
+            }
+
+            if (!firstTransitionAdded && parentService === undefined  && firstServicePodName !== childService) {
+                diagram += `    ${firstServicePodName} --> ${childService}\n`;
+                firstTransitionAdded = true; // Ensure this transition is only added once
+            }
+        });
+
+        return diagram;
+    }
+
+    function convertTraceToGannt(traceData) {
+        let traceDataParsed = JSON.parse(traceData);
+
+        let diagram = 'gantt\n';
+        diagram += `dateFormat YYYY-MM-DD'T'HH:mm:ss.SSS\n`; // Set the date format to match your timestamp format
+        diagram += `axisFormat %Y-%m-%d | %H:%M:%S.%L\n`
+        diagram += `title Trace Gantt Chart for ${traceDataParsed.traceID}\n`;
+
+        // Adding a section for the overall ParentTrace timeline
+        diagram += `section Parent\n`;
+        diagram += `Overall Timeline :milestone, ${traceDataParsed.timeStarted}, ${traceDataParsed.timeEnded}\n`;
+
+        // Filter out 'span' items and sort by 'timestamp'
+        let traceItems = traceDataParsed.items.filter(item => item.itemType === 'trace')
+            .sort((a, b) => {
+                // Replace 'T' with a space for correct date parsing
+                const dateA = new Date(a.timestamp.replace('T', ' '));
+                const dateB = new Date(b.timestamp.replace('T', ' '));
+                return dateA - dateB;
+            });
+
+        // Determine the overall start and end times for the Trace section
+        let traceEnd = traceItems[traceItems.length - 1].timestamp;
+        if (new Date(traceDataParsed.timeEnded) > new Date(traceEnd)) {
+            traceEnd = traceDataParsed.timeEnded; // Use parent's end time if it's later
+        }
+
+        // Adding the main section for Trace items
+        diagram += `section Trace\n`;
+
+        traceItems.forEach((item, index) => {
+            const taskStart = item.timestamp;
+            const taskEnd = index < traceItems.length - 1 ? traceItems[index + 1].timestamp : traceEnd; // Use next item's timestamp or the overall trace end time
+            const taskLabel = item.podName;
+
+            diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+        });
+
+        let spanItems = traceDataParsed.items.filter(item => item.itemType === 'span')
+        const groupedSpans = spanItems.reduce((acc, item) => {
+            if (!acc[item.spanID]) {
+                acc[item.spanID] = { start: null, end: null, podName: item.podName, parentSpanID: item.parentSpanID };
+            }
+            // Assign start time if 'timeStarted' is present, else assign end time
+            if (item.timeStarted) {
+                acc[item.spanID].start = item.timeStarted;
+            } else if (item.timeFinished) {
+                acc[item.spanID].end = item.timeFinished;
+            }
+            return acc;
+        }, {});
+
+        const mergedSpans = Object.entries(groupedSpans).map(([spanID, { start, end, podName, parentSpanID }]) => ({
+            spanID,
+            podName,
+            parentSpanID,
+            timeStarted: start,
+            timeFinished: end
+        }));
+
+        diagram += `section Span\n`;
+        mergedSpans.forEach((item, index) => {
+            const taskLabel = `${item.spanID} - ${item.podName}`;
+            // Now including parentID and the podName of the starter in the output
+            diagram += `    ${taskLabel} (${item.parentSpanID}):${index + 1}, ${item.timeStarted }, ${item.timeFinished}\n`;
+        });
+
+        diagram += `section Database\n`;
+        let dataBaseItem = traceDataParsed.items.filter(item => item.itemType === 'database_span')
+        dataBaseItem.forEach((item, index) => {
+            const taskStart = item.timeStarted;
+            const taskEnd = item.timeFinished
+            const taskLabel = item.podName;
+
+            diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+        });
+
+        return diagram;
+    }
+
+    function createLineDiagram(filteredTraces) {
+        let timestamps = filteredTraces.map((_, index) => index + 1);
+        let cpuValues = filteredTraces.map(trace => trace.metrics.cpuRaw);
+        let memoryValues = filteredTraces.map(trace => trace.metrics.memoryRaw);
+
+        let startTime = new Date(filteredTraces[0].timestamp.replace("'T'", " "));
+        let endTime = new Date(filteredTraces[filteredTraces.length - 1].timestamp.replace("'T'", " "));
+
+        let cpuDiagram = `xychart-beta\n`;
+        cpuDiagram += `    title "CPU usage for pod: ${filteredTraces[0].podName} from ${startTime} to ${endTime}"\n`;
+        cpuDiagram += `    x-axis ${JSON.stringify(timestamps)}\n`;
+        cpuDiagram += '    y-axis "CPU in Units"\n';
+        cpuDiagram += `    bar [${cpuValues.join(', ')}]\n`;
+
+        let memoryDiagram = `xychart-beta\n`;
+        memoryDiagram += `    title "Memory usage for pod: ${filteredTraces[0].podName} from ${startTime.toLocaleString()} to ${endTime.toLocaleString()}"\n`;
+        memoryDiagram += `    x-axis ${JSON.stringify(timestamps)}\n`;
+        memoryDiagram += '    y-axis "Memory in Mi"\n';
+        memoryDiagram += `    bar [${memoryValues.join(', ')}]\n`;
+
+        podMetricsMemory = memoryDiagram;
+        podMetricsCpu = cpuDiagram;
+
+    }
+
 
 </script>
 
 <style>
     .container {
-        display: flex; /* Use flexbox layout */
-        flex-direction: row; /* By default, display containers side by side */
     }
 
     .traces-container,
-    .metrics-container {
+    .visual-container {
         padding: 1em; /* Add padding in em units for spacing */
-        border-right: 0.0625em solid #ccc; /* Add a border in em units to separate containers */
     }
 
     .traces-container {
-        flex: 1; /* Take up 50% of the screen */
+        margin-left: 10em;
+        width: 60%;
     }
 
-    .metrics-container {
-        flex: 1; /* Take up 50% of the screen */
+    .visual-container {
     }
 
-    /* Media query for screens larger than a tablet (min-width: 51.25em) */
-    @media (min-width: 51.25em) {
-        .container {
-            flex-direction: row; /* Display containers side by side */
-        }
-
-        .traces-container,
-        .metrics-container {
-            flex: 1; /* Take up 50% of the screen */
-            border-right: 0.0625em solid #ccc; /* Add a border in em units to separate containers */
-        }
-    }
-
-    /* Media query for tablet screens (max-width: 51.25em) */
-    @media (max-width: 51.25em) {
-        .container {
-            flex-direction: column; /* Stack containers vertically for smaller screens */
-        }
-
-        .traces-container,
-        .metrics-container {
-            flex: initial; /* Reset flex value to allow natural width */
-            width: 100%; /* Expand to full width of the container */
-            border-right: none; /* Remove the border for smaller screens */
-        }
-    }
 </style>
 
 <div class="container">
@@ -110,8 +266,23 @@
             <p>Enter query...</p>
         {/if}
     </div>
-    <div class="metrics-container">
-        <h2 id="metrics">Metrics</h2>
-        <!-- You can add content to the metrics container here -->
+    <div class="visual-container">
+        <h2 id="traces-visual">Diagrams</h2>
+        {#if ganntContent}
+            <Diagram mermaidDiagram={ganntContent} />
+        {:else}
+            <p>No data available for visualization.</p>
+        {/if}
+        {#if stateChartContent}
+            <Diagram mermaidDiagram={stateChartContent} />
+        {:else}
+            <p>No data available for visualization.</p>
+        {/if}
+        {#if podMetricsCpu}
+            <Diagram mermaidDiagram={podMetricsCpu} />
+        {/if}
+        {#if podMetricsMemory}
+            <Diagram mermaidDiagram={podMetricsMemory} />
+        {/if}
     </div>
 </div>

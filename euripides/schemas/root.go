@@ -52,7 +52,26 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 					return nil, err
 				}
 
-				res := parseHitsToGraphql(result)
+				res := parseTracesToGraphql(result)
+				return res, nil
+			},
+		},
+		"metrics": &graphql.Field{
+			Type: metricsType,
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: MetricsQueryInputType,
+				},
+			},
+
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				input, _ := p.Args["input"].(map[string]interface{})
+				result, err := handler.Metrics(input)
+				if err != nil {
+					return nil, err
+				}
+
+				res := parseMetricsToGraphql(result)
 				return res, nil
 			},
 		},

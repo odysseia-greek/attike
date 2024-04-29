@@ -2,7 +2,14 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client/core';
 import { HttpLink } from '@apollo/client/link/http';
 
-const graphqlUrl = process.env.GRAPHQL_URL ||  document.location.origin + '/graphql';
+let graphqlUrl = document.location.origin + '/graphql'
+if (process.env.ENV === 'development') {
+    graphqlUrl = "http://localhost:8080/graphql"
+}
+
+if (process.env.ENV === 'k3d') {
+    graphqlUrl = "http://k3d-odysseia.api.greek:8080/graphql"
+}
 
 const httpLink = new HttpLink({
     // You should use an absolute URL here

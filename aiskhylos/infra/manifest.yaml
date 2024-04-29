@@ -1,0 +1,99 @@
+---
+ # Source: aiskhylos/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: aiskhylos
+ namespace: odysseia
+ labels:
+   app: aiskhylos
+spec:
+ replicas: 1
+ selector:
+   matchLabels:
+     app: aiskhylos
+ template:
+   metadata:
+     labels:
+       app: aiskhylos
+   spec:
+     serviceAccountName: aiskhylossa
+     containers:
+       - name: "aiskhylos"
+         image: ghcr.io/odysseia-greek/aiskhylos:v0.0.11
+         env:
+           - name: NAMESPACE
+             valueFrom:
+               fieldRef:
+                 fieldPath: metadata.namespace
+           - name: WAIT_TIME
+             value: "30"
+           - name: ELASTIC_SEARCH_USER
+             valueFrom:
+               secretKeyRef:
+                 name: eumetros-elastic
+                 key: user
+           - name: ELASTIC_SEARCH_PASSWORD
+             valueFrom:
+               secretKeyRef:
+                 name: eumetros-elastic
+                 key: password
+         envFrom:
+           - configMapRef:
+               name: alexandros
+         imagePullPolicy: Never
+         volumeMounts:
+           - name: elastic-internal-tls
+             mountPath: /app/config/elastic
+             readOnly: true
+         ports:
+           - containerPort: 50053
+             name: grpc
+           - containerPort: 2345
+             name: delve
+     volumes:
+       - name: elastic-internal-tls
+         secret:
+           secretName: aristoteles-es-http-certs-public
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiskhylos
+spec:
+  ports:
+    - port: 2345
+      name: delve
+      targetPort: delve
+  selector:
+    app: aiskhylos
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aiskhylossa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aiskhylos-access
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aiskhylos-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aiskhylos-access
+subjects:
+  - kind: ServiceAccount
+    name: aiskhylossa
+    namespace: odysseia

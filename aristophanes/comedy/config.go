@@ -4,7 +4,10 @@ import (
 	"github.com/odysseia-greek/agora/aristoteles"
 	"github.com/odysseia-greek/agora/aristoteles/models"
 	"github.com/odysseia-greek/agora/plato/config"
+	"github.com/odysseia-greek/agora/plato/logging"
+	sophokles "github.com/odysseia-greek/attike/sophokles/tragedy"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -51,11 +54,31 @@ func NewTraceServiceImpl(env string) (*TraceServiceImpl, error) {
 	index := config.StringFromEnv(config.EnvIndex, config.TracingElasticIndex)
 	startTimeMap := make(map[string]time.Time)
 
+	gatherMetricsString := os.Getenv("GATHER_METRICS")
+	gatherMetrics, err := strconv.ParseBool(gatherMetricsString)
+	if err != nil {
+		logging.Error(err.Error())
+	}
+
+	var metrics *sophokles.ClientMetrics
+	if gatherMetrics {
+		metrics = sophokles.NewMetricsClient()
+		if healthCheck {
+			healthy := metrics.WaitForHealthyState()
+			if !healthy {
+				logging.Info("metrics service not ready - leaving empty")
+				gatherMetrics = false
+			}
+		}
+	}
+
 	return &TraceServiceImpl{
-		StartTimeMap: startTimeMap,
-		PodName:      podName,
-		Namespace:    namespace,
-		Elastic:      elastic,
-		Index:        index,
+		StartTimeMap:  startTimeMap,
+		PodName:       podName,
+		Namespace:     namespace,
+		Elastic:       elastic,
+		Index:         index,
+		Metrics:       metrics,
+		GatherMetrics: gatherMetrics,
 	}, nil
 }

@@ -29,3 +29,18 @@ var TraceQueryInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		},
 	},
 })
+
+var MetricsQueryInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "MetricsQueryInput",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"beginTime": &graphql.InputObjectFieldConfig{
+			Type: graphql.String, // Begin time filter
+		},
+		"endTime": &graphql.InputObjectFieldConfig{
+			Type: graphql.String, // End time filter
+		},
+		"order": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+	},
+})
