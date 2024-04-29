@@ -16,6 +16,10 @@
             fontSize: 15,
             sectionFontSize: 25,
             gridLineStartPadding: 20,
+        },
+        xyChart: {
+            width: 1200,
+            height: 600,
         }
     });
 

@@ -20,6 +20,12 @@ query GetTraces($input: TraceQueryInput!) {
 				itemType
 				operation
 				rootQuery
+				metrics {
+					cpuHumanReadable
+					memoryHumanReadable
+					cpuRaw
+					memoryRaw
+				}
 			}
 			... on Span {
 				parentSpanID

@@ -174,5 +174,32 @@ var traceType = graphql.NewObject(graphql.ObjectConfig{
 		"rootQuery": &graphql.Field{
 			Type: graphql.String,
 		},
+		"metrics": &graphql.Field{
+			Type: tracingMetrics,
+		},
+	},
+})
+
+var tracingMetrics = graphql.NewObject(graphql.ObjectConfig{
+	Name: "tracingMetrics",
+	Fields: graphql.Fields{
+		"cpuRaw": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"memoryRaw": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"cpuHumanReadable": &graphql.Field{
+			Type: graphql.String,
+		},
+		"memoryHumanReadable": &graphql.Field{
+			Type: graphql.String,
+		},
+		"memoryUnits": &graphql.Field{
+			Type: graphql.String,
+		},
+		"cpuUnits": &graphql.Field{
+			Type: graphql.String,
+		},
 	},
 })

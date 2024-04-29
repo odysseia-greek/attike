@@ -226,21 +226,15 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 	}
 
 	if t.GatherMetrics && t.Metrics != nil {
-		metrics, err := t.Metrics.FetchMetrics(ctx, &pbm.EmptyMetrics{})
+		metrics, err := t.gatherMetrics()
 		if err != nil {
+			logging.Debug("cannot set metrics because an error was returned")
 			logging.Error(err.Error())
-		}
-
-		trace.Metrics = &pb.TracingMetrics{
-			CpuUnits:            metrics.CpuUnits,
-			MemoryUnits:         metrics.MemoryUnits,
-			Name:                metrics.Pod.Name,
-			CpuRaw:              metrics.Pod.CpuRaw,
-			MemoryRaw:           metrics.Pod.MemoryRaw,
-			CpuHumanReadable:    metrics.Pod.CpuHumanReadable,
-			MemoryHumanReadable: metrics.Pod.MemoryHumanReadable,
+		} else {
+			trace.Metrics = metrics
 		}
 	}
+
 	data, err := json.Marshal(&trace)
 	if err != nil {
 		return nil, err
@@ -258,6 +252,26 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 	combinedId := fmt.Sprintf("%s+%s", traceRequest.TraceId, traceRequest.ParentSpanId)
 	return &pb.TraceResponse{
 		CombinedId: combinedId,
+	}, nil
+}
+
+func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	metrics, err := t.Metrics.FetchMetrics(ctx, &pbm.Empty{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.TracingMetrics{
+		CpuUnits:            metrics.CpuUnits,
+		MemoryUnits:         metrics.MemoryUnits,
+		Name:                metrics.Pod.Name,
+		CpuRaw:              metrics.Pod.CpuRaw,
+		MemoryRaw:           metrics.Pod.MemoryRaw,
+		CpuHumanReadable:    metrics.Pod.CpuHumanReadable,
+		MemoryHumanReadable: metrics.Pod.MemoryHumanReadable,
 	}, nil
 }
 

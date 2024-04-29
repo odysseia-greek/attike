@@ -1,6 +1,7 @@
 <script>
 	import TraceQuery from './components/TraceQuery.svelte';
 	import Sidebar from './components/Sidebar.svelte';
+	import Metrics from "./components/Metrics.svelte";
 </script>
 
 <main>
@@ -8,6 +9,7 @@
 	<!-- Use the TraceQuery component -->
 	<h1>Praxiteles</h1>
 	<TraceQuery />
+	<Metrics />
 </main>
 
 <style>

@@ -1,7 +1,7 @@
 <!-- Sidebar.svelte -->
 <script>
     import Fa from 'svelte-fa'
-    import { faBinoculars } from '@fortawesome/free-solid-svg-icons'
+    import {faBinoculars, faChartSimple} from '@fortawesome/free-solid-svg-icons'
     import { faAreaChart } from '@fortawesome/free-solid-svg-icons';
     import { faHomeUser, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
@@ -76,7 +76,15 @@
         <span class="menu-icon"><Fa icon={faBinoculars} /></span>
         <span class={isSidebarOpen ? "text-expanded" : "icon-collapsed"}>Traces</span>
     </a>
-    <a href="#visual" class="menu-item">
+    <a href="#traces-visual" class="menu-item">
+        <span class="menu-icon"><Fa icon={faAreaChart} /></span>
+        <span class={isSidebarOpen ? "text-expanded" : "icon-collapsed"}>Metrics</span>
+    </a>
+    <a href="#metrics" class="menu-item">
+        <span class="menu-icon"><Fa icon={faChartSimple} /></span>
+        <span class={isSidebarOpen ? "text-expanded" : "icon-collapsed"}>Metrics</span>
+    </a>
+    <a href="#metrics-visual" class="menu-item">
         <span class="menu-icon"><Fa icon={faAreaChart} /></span>
         <span class={isSidebarOpen ? "text-expanded" : "icon-collapsed"}>Metrics</span>
     </a>

@@ -14,16 +14,42 @@
     let queryResult = null; // Declare queryResult here
     let ganntContent = null;
     let stateChartContent = null;
+    let podMetricsMemory = null;
+    let podMetricsCpu = null;
 
     // Function to handle the query result
-    function handleQueryResult(result) {
+    function handleQueryResult(result, filters) {
         queryResult = result.data; // Assign the result to queryResult
         if (result.data.traces && result.data.traces.length > 0) {
-            let jsonResult = JSON.stringify(result.data.traces[0], null, 2)
+            // Handle other diagram generation that does not depend on podName
+            let jsonResult = JSON.stringify(result.data.traces[0], null, 2);
             ganntContent = convertTraceToGannt(jsonResult);
             stateChartContent = convertTraceToStateDiagram(jsonResult);
         }
+
+        if (filters.podName) {
+            let allItems = result.data.traces.flatMap(trace => trace.items);
+
+            let filteredItems = allItems.filter(item =>
+                item.itemType === 'trace' &&
+                item.podName === filters.podName &&
+                'metrics' in item &&
+                item.metrics != null
+            );
+
+            let sortedItems = filteredItems.sort((a, b) => {
+                const dateA = new Date(a.timestamp.replace('T', ' '));
+                const dateB = new Date(b.timestamp.replace('T', ' '));
+                return dateA - dateB;
+            });
+
+            // Generate line chart if there are traces for the specified podName
+            if (sortedItems.length > 0) {
+                createLineDiagram(sortedItems); // Generate line chart
+            }
+        }
     }
+
 
     // Create a Promise-based function to handle the GraphQL query
     async function handleQueryWithFilters(filters) {
@@ -39,7 +65,7 @@
         });
 
         // Call the function to handle the query result
-        handleQueryResult(result);
+        handleQueryResult(result, filters);
     }
 
     // Listen for the custom event and handle it
@@ -179,6 +205,32 @@
         return diagram;
     }
 
+    function createLineDiagram(filteredTraces) {
+        let timestamps = filteredTraces.map((_, index) => index + 1);
+        let cpuValues = filteredTraces.map(trace => trace.metrics.cpuRaw);
+        let memoryValues = filteredTraces.map(trace => trace.metrics.memoryRaw);
+
+        let startTime = new Date(filteredTraces[0].timestamp.replace("'T'", " "));
+        let endTime = new Date(filteredTraces[filteredTraces.length - 1].timestamp.replace("'T'", " "));
+
+        let cpuDiagram = `xychart-beta\n`;
+        cpuDiagram += `    title "CPU usage for pod: ${filteredTraces[0].podName} from ${startTime} to ${endTime}"\n`;
+        cpuDiagram += `    x-axis ${JSON.stringify(timestamps)}\n`;
+        cpuDiagram += '    y-axis "CPU in Units"\n';
+        cpuDiagram += `    bar [${cpuValues.join(', ')}]\n`;
+
+        let memoryDiagram = `xychart-beta\n`;
+        memoryDiagram += `    title "Memory usage for pod: ${filteredTraces[0].podName} from ${startTime.toLocaleString()} to ${endTime.toLocaleString()}"\n`;
+        memoryDiagram += `    x-axis ${JSON.stringify(timestamps)}\n`;
+        memoryDiagram += '    y-axis "Memory in Mi"\n';
+        memoryDiagram += `    bar [${memoryValues.join(', ')}]\n`;
+
+        podMetricsMemory = memoryDiagram;
+        podMetricsCpu = cpuDiagram;
+
+    }
+
+
 </script>
 
 <style>
@@ -215,7 +267,7 @@
         {/if}
     </div>
     <div class="visual-container">
-        <h2 id="visual">Diagrams</h2>
+        <h2 id="traces-visual">Diagrams</h2>
         {#if ganntContent}
             <Diagram mermaidDiagram={ganntContent} />
         {:else}
@@ -225,6 +277,12 @@
             <Diagram mermaidDiagram={stateChartContent} />
         {:else}
             <p>No data available for visualization.</p>
+        {/if}
+        {#if podMetricsCpu}
+            <Diagram mermaidDiagram={podMetricsCpu} />
+        {/if}
+        {#if podMetricsMemory}
+            <Diagram mermaidDiagram={podMetricsMemory} />
         {/if}
     </div>
 </div>

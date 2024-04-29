@@ -67,7 +67,7 @@ func NewTraceServiceImpl(env string) (*TraceServiceImpl, error) {
 			healthy := metrics.WaitForHealthyState()
 			if !healthy {
 				logging.Info("metrics service not ready - leaving empty")
-				metrics = nil
+				gatherMetrics = false
 			}
 		}
 	}

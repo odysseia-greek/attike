@@ -39,7 +39,7 @@ func TestParseHitsToGraphql(t *testing.T) {
 	}
 
 	// Call the function to be tested
-	traces := parseHitsToGraphql(hits)
+	traces := parseTracesToGraphql(hits)
 
 	// Use testify/assert for assertions
 	assert := assert.New(t)

@@ -1,0 +1,20 @@
+# getMetrics.graphql
+query GetMetrics($input: MetricsQueryInput!)  {
+    metrics(input: $input)  {
+        nodes{
+            nodeName
+            cpuPercentageHumanReadable
+            memoryPercentageHumanReadable
+        }
+        grouped{
+            name
+            cpuHumanReadable
+            memoryHumanReadable
+        }
+        pods{
+            name
+            cpuHumanReadable
+            memoryHumanReadable
+        }
+    }
+}

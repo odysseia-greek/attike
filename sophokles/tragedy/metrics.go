@@ -41,6 +41,7 @@ func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.Empty)
 
 	podMetrics, err := m.Kube.MetricsClient().MetricsV1beta1().PodMetricses(m.Namespace).Get(ctx, m.PodName, v1.GetOptions{})
 	if err != nil {
+		logging.Error(err.Error())
 		return nil, err
 	}
 
@@ -66,5 +67,7 @@ func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.Empty)
 	response.Pod.CpuHumanReadable = fmt.Sprintf("%vm", totalCpu)
 	response.Pod.MemoryHumanReadable = fmt.Sprintf("%vMi", totalMemory)
 
+	metricLog := fmt.Sprintf("name: %s | cpu: %s | memory: %s |", response.Pod.Name, response.Pod.CpuHumanReadable, response.Pod.MemoryHumanReadable)
+	logging.Info(metricLog)
 	return response, nil
 }
