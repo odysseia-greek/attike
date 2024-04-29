@@ -29,9 +29,9 @@ info:
 
 
 servers:
-  - url: http://euripides.k3s-odysseia.greek/graphql
+  - url: http://k3d-odysseia.api.greek:8080/graphql
     description: k3s
     production: false
-  - url: https://euripides.odysseia-greek.com/graphql
+  - url: https://attike.odysseia-greek.com/graphql
     description: Production
     production: true

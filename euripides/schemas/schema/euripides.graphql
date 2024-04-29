@@ -1,0 +1,130 @@
+schema {
+  query: RootQuery
+}
+
+type DatabaseSpan {
+  hits: Int
+  itemType: String
+  namespace: String
+  parentSpanID: String
+  podName: String
+  query: String
+  spanID: String
+  timeFinished: String
+  timeStarted: String
+  timestamp: String
+  took: String
+}
+
+type Grouped {
+  cpuHumanReadable: [String]
+  cpuRaw: [Int]
+  memoryHumanReadable: [String]
+  memoryRaw: [Int]
+  name: String
+}
+
+union Item = DatabaseSpan | Span | Trace
+
+type Metrics {
+  cpuUnits: String
+  grouped: [Grouped]
+  memoryUnits: String
+  nodes: [Node]
+  pods: [Pod]
+  timeEnded: String
+  timeStamps: [String]
+  timeStarted: String
+}
+
+input MetricsQueryInput {
+  beginTime: String
+  endTime: String
+  order: String
+}
+
+type Node {
+  cpuHumanReadable: [String]
+  cpuPercentage: [Float]
+  cpuPercentageHumanReadable: [String]
+  cpuRaw: [Int]
+  memoryHumanReadable: [String]
+  memoryPercentage: [Float]
+  memoryPercentageHumanReadable: [String]
+  memoryRaw: [Int]
+  nodeName: String
+}
+
+type ParentTrace {
+  isActive: Boolean
+  items: [Item]
+  responseCode: Int
+  timeEnded: String
+  timeStarted: String
+  totalTime: Int
+  traceID: String
+}
+
+type Pod {
+  cpuHumanReadable: [String]
+  cpuRaw: [Int]
+  memoryHumanReadable: [String]
+  memoryRaw: [Int]
+  name: String
+}
+
+type RootQuery {
+  metrics(input: MetricsQueryInput): Metrics
+
+  """Get traces"""
+  traces(input: TraceQueryInput): [ParentTrace]
+}
+
+type Span {
+  action: String
+  itemType: String
+  namespace: String
+  parentSpanID: String
+  podName: String
+  requestBody: String
+  responseCode: Int
+  spanID: String
+  timeFinished: String
+  timeStarted: String
+  timestamp: String
+}
+
+type Trace {
+  host: String
+  itemType: String
+  method: String
+  metrics: tracingMetrics
+  namespace: String
+  operation: String
+  parentSpanID: String
+  podName: String
+  remoteAddress: String
+  rootQuery: String
+  timestamp: String
+  url: String
+}
+
+input TraceQueryInput {
+  totalTimeHigherThan: Int
+  podName: String
+  operation: String
+  ids: [String]
+  statusCode: Int
+  beginTime: String
+  endTime: String
+}
+
+type tracingMetrics {
+  cpuHumanReadable: String
+  cpuRaw: Int
+  cpuUnits: String
+  memoryHumanReadable: String
+  memoryRaw: Int
+  memoryUnits: String
+}
+
