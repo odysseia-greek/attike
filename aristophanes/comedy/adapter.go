@@ -9,6 +9,10 @@ import (
 	"net/http"
 )
 
+const (
+	SOMECONFIGKEY string = "aristophanescontext"
+)
+
 type Adapter func(http.HandlerFunc) http.HandlerFunc
 
 func Trace(tracer pb.TraceService_ChorusClient) Adapter {
@@ -18,11 +22,18 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 			trace := traceFromString(requestId)
 
 			if trace.Save {
-				go func(traceCopy *pb.TraceBare) {
-					newSpan := GenerateSpanID()
+				newSpan := GenerateSpanID()
+
+				// Prepare the trace information synchronously
+				trace.SpanId = newSpan
+				combinedId := CreateCombinedId(trace)
+				ctx := context.WithValue(r.Context(), SOMECONFIGKEY, combinedId)
+
+				// Send the trace information asynchronously
+				go func() {
 					parabasis := &pb.ParabasisRequest{
-						TraceId:      traceCopy.TraceId,
-						ParentSpanId: traceCopy.SpanId,
+						TraceId:      trace.TraceId,
+						ParentSpanId: trace.SpanId,
 						SpanId:       newSpan,
 						RequestType: &pb.ParabasisRequest_Trace{
 							Trace: &pb.TraceRequest{
@@ -32,18 +43,13 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 							},
 						},
 					}
-
-					traceCopy.SpanId = newSpan
-
-					err := tracer.Send(parabasis)
-					if err != nil {
+					if err := tracer.Send(parabasis); err != nil {
 						logging.Error(fmt.Sprintf("failed to send trace data: %v", err))
 					}
+				}()
 
-					combinedId := CreateCombinedId(traceCopy)
-					ctx := context.WithValue(r.Context(), config.HeaderKey, combinedId)
-					f(w, r.WithContext(ctx))
-				}(trace)
+				// Serve the request with the updated context
+				f(w, r.WithContext(ctx))
 				return
 			}
 
