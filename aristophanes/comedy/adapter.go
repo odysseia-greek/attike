@@ -9,17 +9,12 @@ import (
 	"net/http"
 )
 
-const (
-	SPANCTX string = "SPANCTX"
-)
-
 type Adapter func(http.HandlerFunc) http.HandlerFunc
 
 func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			requestId := r.Header.Get(config.HeaderKey)
-			w.Header().Set(config.HeaderKey, requestId)
 			trace := traceFromString(requestId)
 
 			if !trace.Save {
@@ -51,7 +46,7 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 
 					combinedId := CreateCombinedId(trace)
 
-					ctx := context.WithValue(r.Context(), SPANCTX, combinedId)
+					ctx := context.WithValue(r.Context(), config.HeaderKey, combinedId)
 					f.ServeHTTP(w, r.WithContext(ctx))
 				}()
 			}
