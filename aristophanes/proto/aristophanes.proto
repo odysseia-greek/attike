@@ -3,9 +3,15 @@ option go_package = "github.com/odysseia-greek/attike/aristophanes/proto";
 
 package aristophanes;
 
+message TraceBare {
+  string trace_id = 1;
+  string span_id = 2;
+  bool save = 3;
+}
+
 // Common message used in various trace-related messages
 message TraceCommon {
-  string span_id = 1; // The span_id will be generated automatically
+  string span_id = 1;
   string parent_span_id = 2; // The root parent_span_id
   string timestamp = 3; // Timestamp will be set automatically
   string pod_name = 4; // Pod that generated Trace
@@ -49,23 +55,9 @@ message TracingMetrics {
   string memory_human_readable = 7;
 }
 
-message SpanStart {
-  string action = 1; // Action performed in the span
-  string request_body = 2; // Optional: Request body data
-  string time_started = 3;
-  // Reuse TraceCommon for common fields
-  TraceCommon common = 4;
-}
-
-message SpanStop {
-  int32 response_code = 1;
-  string time_finished = 2;
-  TraceCommon common = 3;
-}
-
 message Span {
   string action = 1; // Action performed in the span
-  string request_body = 2;
+  string status = 2;
   TraceCommon common = 3;
 }
 
@@ -81,28 +73,22 @@ message DatabaseSpan {
 
 // The TraceService service provides operations for managing and tracking traces and spans.
 service TraceService {
-  // Start a new trace.
-  rpc StartTrace(StartTraceRequest) returns (TraceResponse);
-
-  // Record a new trace within an existing trace.
-  rpc Trace(TraceRequest) returns (TraceResponse);
-
-  // Start a new span within an existing trace.
-  rpc StartSpan(StartSpanRequest) returns (TraceResponse);
-
-  // Record a span with details of an action performed.
-  rpc Span(SpanRequest) returns (TraceResponse);
-
-  // Close an existing Span
-  rpc CloseSpan(CloseSpanRequest) returns (TraceResponse);
-
-  // Record a span related to a database query.
-  rpc DatabaseSpan(DatabaseSpanRequest) returns (TraceResponse);
-
-  // Close an existing trace.
-  rpc CloseTrace(CloseTraceRequest) returns (TraceResponse);
-
   rpc HealthCheck(Empty) returns (HealthCheckResponse);
+  rpc Chorus(stream ParabasisRequest) returns (TraceResponse);
+}
+
+
+message ParabasisRequest {
+  string trace_id = 1;
+  string parent_span_id = 2;
+  string span_id = 3;
+  oneof request_type {
+    StartTraceRequest start_trace = 4;
+    TraceRequest trace = 5;
+    CloseTraceRequest close_trace = 6;
+    SpanRequest span = 7;
+    DatabaseSpanRequest database_span = 8;
+  }
 }
 
 message Empty {}
@@ -116,52 +102,31 @@ message StartTraceRequest {
   string root_query = 6; // Graphql Root Query
 }
 
+message TraceRequest {
+  string method = 1; // GET POST PUT, etc.
+  string url = 2; // The URL called by a client
+  string host = 3; // The host that generated the trace
+}
+
 message CloseTraceRequest {
-  string trace_id = 1; // Root trace_id which where item will be added
-  string parent_span_id = 2;  // The root parent_span_id
-  string response_body = 3; // Optional: Response body data
-  int32 response_code = 4;
-}
-
-message CloseSpanRequest {
-  string trace_id = 1; // Root trace_id which where item will be added
-  string parent_span_id = 2;  // The root parent_span_id
-  string span_id = 3;
-  int32 response_code = 4;
-}
-
-message StartSpanRequest {
-  string trace_id = 1; // Root trace_id which where item will be added
-  string parent_span_id = 2;  // The root parent_span_id
-  string action = 3; // Action performed in the span
-  string request_body = 4; // Optional: Request body data
+  string response_body = 1; // Optional: Response body data
+  int32 response_code = 2;
 }
 
 message SpanRequest {
-  string trace_id = 1; // Root trace_id which where item will be added
-  string parent_span_id = 2;  // The root parent_span_id
-  string action = 3; // Action performed in the span
+  string action = 1; // Action performed in the span
+  string status = 2;
 }
 
 message DatabaseSpanRequest {
-  string trace_id = 1;
-  string parent_span_id = 2;  // The root parent_span_id
-  string action = 3; // Action performed in the span
-  string query = 4; // Database query statement
-  int64 hits = 5; // Query result data as JSON string
-  int64 time_took = 6;
+  string action = 1; // Action performed in the span
+  string query = 2; // Database query statement
+  int64 hits = 3; // Number of hits
+  int64 time_took = 4;
 }
 
 message TraceResponse {
-  string combined_id = 1; // Combination of the trace_id, parent_span_id and sampling bool for example: 841a4f73-ba5b-4c38-9237-e1ad91459028+70b993de1e2f879d+1
-}
-
-message TraceRequest {
-  string trace_id = 1; // Root trace_id which where item will be added
-  string parent_span_id = 2;  // The root parent_span_id
-  string method = 3; // GET POST PUT, etc.
-  string url = 4; // The URL called by a client
-  string host = 5; // The host that generated the trace
+  string ack = 1;
 }
 
 message HealthCheckResponse {

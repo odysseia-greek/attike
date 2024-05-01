@@ -2,24 +2,31 @@ package comedy
 
 import (
 	"context"
+	"fmt"
 	"github.com/odysseia-greek/agora/aristoteles"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	sophokles "github.com/odysseia-greek/attike/sophokles/tragedy"
 	"google.golang.org/grpc"
-	"sync"
+	"google.golang.org/grpc/credentials/insecure"
 	"time"
 )
 
 type TraceService interface {
 	HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error)
-	StartTrace(ctx context.Context, request *pb.StartTraceRequest) (*pb.TraceResponse, error)
-	Trace(ctx context.Context, request *pb.TraceRequest) (*pb.TraceResponse, error)
-	StartSpan(ctx context.Context, request *pb.StartSpanRequest) (*pb.TraceResponse, error)
-	Span(ctx context.Context, request *pb.SpanRequest) (*pb.TraceResponse, error)
-	CloseSpan(ctx context.Context, request *pb.CloseSpanRequest) (*pb.TraceResponse, error)
-	DatabaseSpan(ctx context.Context, request *pb.DatabaseSpanRequest) (*pb.TraceResponse, error)
-	CloseTrace(ctx context.Context, request *pb.CloseTraceRequest) (*pb.TraceResponse, error)
+	Chorus(ctx context.Context) (pb.TraceService_ChorusClient, error)
 	WaitForHealthyState() bool
+}
+
+type MapCommand struct {
+	Action   string
+	TraceID  string
+	Time     time.Time
+	Response chan<- MapResponse
+}
+
+type MapResponse struct {
+	Time  time.Time
+	Found bool
 }
 
 type TraceServiceImpl struct {
@@ -29,9 +36,8 @@ type TraceServiceImpl struct {
 	Elastic       aristoteles.Client
 	Metrics       *sophokles.ClientMetrics
 	GatherMetrics bool
-	StartTimeMap  map[string]time.Time
+	commands      chan MapCommand
 	pb.UnimplementedTraceServiceServer
-	mu sync.Mutex // Mutex to protect the task queue
 }
 
 type TraceServiceClient struct {
@@ -42,11 +48,14 @@ type ClientTracer struct {
 	tracer pb.TraceServiceClient
 }
 
-func NewClientTracer() *ClientTracer {
+func NewClientTracer() (*ClientTracer, error) {
 	// Initialize the gRPC client for the tracing service
-	conn, _ := grpc.Dial(DefaultAddress, grpc.WithInsecure())
+	conn, err := grpc.Dial(DefaultAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to tracing service: %w", err)
+	}
 	client := pb.NewTraceServiceClient(conn)
-	return &ClientTracer{tracer: client}
+	return &ClientTracer{tracer: client}, nil
 }
 
 func (c *ClientTracer) WaitForHealthyState() bool {
@@ -70,30 +79,6 @@ func (c *ClientTracer) HealthCheck(ctx context.Context, request *pb.Empty) (*pb.
 	return c.tracer.HealthCheck(ctx, request)
 }
 
-func (c *ClientTracer) StartTrace(ctx context.Context, request *pb.StartTraceRequest) (*pb.TraceResponse, error) {
-	return c.tracer.StartTrace(ctx, request)
-}
-
-func (c *ClientTracer) Trace(ctx context.Context, request *pb.TraceRequest) (*pb.TraceResponse, error) {
-	return c.tracer.Trace(ctx, request)
-}
-
-func (c *ClientTracer) StartSpan(ctx context.Context, request *pb.StartSpanRequest) (*pb.TraceResponse, error) {
-	return c.tracer.StartSpan(ctx, request)
-}
-
-func (c *ClientTracer) CloseSpan(ctx context.Context, request *pb.CloseSpanRequest) (*pb.TraceResponse, error) {
-	return c.tracer.CloseSpan(ctx, request)
-}
-
-func (c *ClientTracer) Span(ctx context.Context, request *pb.SpanRequest) (*pb.TraceResponse, error) {
-	return c.tracer.Span(ctx, request)
-}
-
-func (c *ClientTracer) DatabaseSpan(ctx context.Context, request *pb.DatabaseSpanRequest) (*pb.TraceResponse, error) {
-	return c.tracer.DatabaseSpan(ctx, request)
-}
-
-func (c *ClientTracer) CloseTrace(ctx context.Context, request *pb.CloseTraceRequest) (*pb.TraceResponse, error) {
-	return c.tracer.CloseTrace(ctx, request)
+func (c *ClientTracer) Chorus(ctx context.Context) (pb.TraceService_ChorusClient, error) {
+	return c.tracer.Chorus(ctx)
 }

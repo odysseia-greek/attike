@@ -2,14 +2,12 @@ package comedy
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/odysseia-greek/agora/plato/logging"
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	pbm "github.com/odysseia-greek/attike/sophokles/proto"
+	"io"
 	"time"
 )
 
@@ -20,29 +18,71 @@ const (
 	ITEMS        string = "items"
 )
 
+func (t *TraceServiceImpl) ManageStartTimeMap() {
+	startTimeMap := make(map[string]time.Time)
+	for cmd := range t.commands {
+		switch cmd.Action {
+		case "set":
+			startTimeMap[cmd.TraceID] = cmd.Time
+		case "get":
+			startTime, found := startTimeMap[cmd.TraceID]
+			cmd.Response <- MapResponse{Time: startTime, Found: found}
+		case "delete":
+			delete(startTimeMap, cmd.TraceID)
+		}
+	}
+}
+
 func (t *TraceServiceImpl) HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error) {
 	elasticHealth := t.Elastic.Health().Info()
 	return &pb.HealthCheckResponse{Status: elasticHealth.Healthy}, nil
 }
 
-func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceRequest) (*pb.TraceResponse, error) {
-	traceId := uuid.New().String()
-	spanId := t.generateSpanID()
+func (t *TraceServiceImpl) Chorus(stream pb.TraceService_ChorusServer) error {
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&pb.TraceResponse{Ack: "Received"})
+		}
+		if err != nil {
+			return err
+		}
 
+		switch req := in.RequestType.(type) {
+		case *pb.ParabasisRequest_StartTrace:
+			go t.StartTrace(req, in.TraceId, in.ParentSpanId)
+		case *pb.ParabasisRequest_Trace:
+			go t.Trace(req, in.TraceId, in.ParentSpanId, in.SpanId)
+		case *pb.ParabasisRequest_CloseTrace:
+			go t.CloseTrace(req, in.TraceId, in.ParentSpanId)
+		case *pb.ParabasisRequest_Span:
+			go t.Span(req, in.TraceId, in.ParentSpanId)
+		case *pb.ParabasisRequest_DatabaseSpan:
+			go t.DatabaseSpan(req, in.TraceId, in.ParentSpanId)
+		default:
+			logging.Debug(fmt.Sprintf("Unhandled trace request type: %s", req))
+		}
+	}
+}
+
+func (t *TraceServiceImpl) StartTrace(start *pb.ParabasisRequest_StartTrace, traceID, ParentSpanID string) {
 	traceTime := time.Now().UTC()
-	// there seems to be a concurrent write here at times
-	t.StartTimeMap[traceId] = traceTime
+	t.commands <- MapCommand{
+		Action:  "set",
+		TraceID: traceID,
+		Time:    traceTime,
+	}
 
-	trace := pb.TraceStart{
-		Method:        start.Method,
-		Url:           start.Url,
-		Host:          start.Host,
-		RemoteAddress: start.RemoteAddress,
-		Operation:     start.Operation,
-		RootQuery:     start.RootQuery,
+	trace := &pb.TraceStart{
+		Method:        start.StartTrace.Method,
+		Url:           start.StartTrace.Url,
+		Host:          start.StartTrace.Host,
+		RemoteAddress: start.StartTrace.RemoteAddress,
+		Operation:     start.StartTrace.Operation,
+		RootQuery:     start.StartTrace.RootQuery,
 		Common: &pb.TraceCommon{
-			SpanId:       spanId,
-			ParentSpanId: spanId,
+			SpanId:       ParentSpanID,
+			ParentSpanId: ParentSpanID,
 			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
@@ -51,7 +91,7 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 	}
 
 	jsonData := map[string]interface{}{
-		"items":       []pb.TraceStart{trace},
+		"items":       []pb.TraceStart{*trace},
 		"isActive":    true,
 		"timeStarted": traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
 		"timeEnded":   "1970-01-01T00:00:00.000",                   // Default null-like value
@@ -60,28 +100,27 @@ func (t *TraceServiceImpl) StartTrace(ctx context.Context, start *pb.StartTraceR
 
 	data, err := json.Marshal(&jsonData)
 	if err != nil {
-		return nil, err
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
+		return
 	}
 
-	doc, err := t.Elastic.Document().CreateWithId(t.Index, traceId, data)
+	doc, err := t.Elastic.Document().CreateWithId(t.Index, traceID, data)
 	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
+		logging.Error(fmt.Sprintf("Error creating document for trace ID %s: %s", traceID, err))
+		return
 	}
 
 	logging.Debug(fmt.Sprintf("created trace with id: %s", doc.ID))
 
-	combinedId := fmt.Sprintf("%s+%s+%d", traceId, spanId, 1)
-	return &pb.TraceResponse{
-		CombinedId: combinedId,
-	}, nil
 }
 
-func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRequest) (*pb.TraceResponse, error) {
+func (t *TraceServiceImpl) CloseTrace(close *pb.ParabasisRequest_CloseTrace, traceID, ParentSpanID string) {
 	traceTime := time.Now().UTC()
 
-	trace := pb.TraceStop{
+	traceData := pb.TraceStop{
+		ResponseBody: close.CloseTrace.ResponseBody,
 		Common: &pb.TraceCommon{
-			ParentSpanId: stop.ParentSpanId,
+			ParentSpanId: ParentSpanID,
 			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
@@ -89,135 +128,64 @@ func (t *TraceServiceImpl) CloseTrace(ctx context.Context, stop *pb.CloseTraceRe
 		},
 	}
 
-	if stop.ResponseBody != "" {
-		trace.ResponseBody = stop.ResponseBody
-	}
-
-	data, err := json.Marshal(&trace)
+	data, err := json.Marshal(&traceData)
 	if err != nil {
-		return nil, err
-	}
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
 
-	_, err = t.UpdateDocumentWithRetry(stop.TraceId, ITEMS, data)
+	}
+	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
 	if err != nil {
-		return nil, err
+		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
 	}
 
 	var totalTime int64
-	originalTimeStart, found := t.StartTimeMap[stop.TraceId]
-	if !found {
+	responseChan := make(chan MapResponse)
+	t.commands <- MapCommand{
+		Action:   "get",
+		TraceID:  traceID,
+		Response: responseChan,
+	}
+	response := <-responseChan
+
+	if !response.Found {
 		totalTime = 0
 	} else {
-		totalTime = traceTime.Sub(originalTimeStart).Milliseconds()
+		totalTime = traceTime.Sub(response.Time).Milliseconds()
 	}
 
 	closingTrace := map[string]interface{}{
 		"isActive":     false,
 		"timeEnded":    traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
 		"totalTime":    totalTime,
-		"responseCode": stop.ResponseCode,
+		"responseCode": close.CloseTrace.ResponseCode,
 	}
 
 	update, err := json.Marshal(closingTrace)
 	if err != nil {
-		return nil, err
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
 	}
 
-	doc, err := t.Elastic.Document().Update(t.Index, stop.TraceId, update)
+	doc, err := t.Elastic.Document().Update(t.Index, traceID, update)
 	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
+		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
 	}
 
-	// Remove the entry from the map perhaps there is a concurrent write to map here.
-	delete(t.StartTimeMap, doc.ID)
+	t.commands <- MapCommand{
+		Action:  "delete",
+		TraceID: doc.ID,
+	}
 
-	logging.Debug(fmt.Sprintf("closed trace with id: %s", doc.ID))
-
-	return &pb.TraceResponse{
-		CombinedId: stop.TraceId,
-	}, nil
+	logging.Debug(fmt.Sprintf("closed trace with id: %s", docID))
 }
 
-func (t *TraceServiceImpl) StartSpan(ctx context.Context, start *pb.StartSpanRequest) (*pb.TraceResponse, error) {
-	spanId := t.generateSpanID()
-
-	timeStarted := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
-
-	span := pb.SpanStart{
-		Action:      start.Action,
-		RequestBody: start.RequestBody,
-		TimeStarted: timeStarted,
+func (t *TraceServiceImpl) Trace(in *pb.ParabasisRequest_Trace, traceID, ParentSpanID, spanID string) {
+	traceData := &pb.Trace{
+		Method: in.Trace.Method,
+		Url:    in.Trace.Url,
+		Host:   in.Trace.Host,
 		Common: &pb.TraceCommon{
-			SpanId:       spanId,
-			ParentSpanId: start.ParentSpanId,
-			Timestamp:    timeStarted,
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     SPAN,
-		},
-	}
-
-	data, err := json.Marshal(&span)
-	if err != nil {
-		return nil, err
-	}
-
-	docID, err := t.UpdateDocumentWithRetry(start.TraceId, ITEMS, data)
-	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
-	}
-
-	logging.Debug(fmt.Sprintf("started span with id: %s and parentId: %s to trace: %s", spanId, start.ParentSpanId, docID))
-
-	combinedId := fmt.Sprintf("%s+%s+%d", start.TraceId, spanId, 1)
-	return &pb.TraceResponse{
-		CombinedId: combinedId,
-	}, nil
-}
-
-func (t *TraceServiceImpl) CloseSpan(ctx context.Context, stop *pb.CloseSpanRequest) (*pb.TraceResponse, error) {
-	timeEnded := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
-
-	span := pb.SpanStop{
-		ResponseCode: stop.ResponseCode,
-		TimeFinished: timeEnded,
-		Common: &pb.TraceCommon{
-			ParentSpanId: stop.ParentSpanId,
-			SpanId:       stop.SpanId,
-			Timestamp:    timeEnded,
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     SPAN,
-		},
-	}
-
-	data, err := json.Marshal(&span)
-	if err != nil {
-		return nil, err
-	}
-
-	docID, err := t.UpdateDocumentWithRetry(stop.TraceId, ITEMS, data)
-	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
-	}
-
-	logging.Debug(fmt.Sprintf("closed span with id: %s and parentId: %s to trace: %s", stop.SpanId, stop.ParentSpanId, docID))
-
-	return &pb.TraceResponse{
-		CombinedId: stop.TraceId,
-	}, nil
-}
-
-func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequest) (*pb.TraceResponse, error) {
-	spanId := t.generateSpanID()
-
-	trace := pb.Trace{
-		Method: traceRequest.Method,
-		Url:    traceRequest.Url,
-		Host:   traceRequest.Host,
-		Common: &pb.TraceCommon{
-			SpanId:       spanId,
-			ParentSpanId: traceRequest.ParentSpanId,
+			SpanId:       spanID,
+			ParentSpanId: ParentSpanID,
 			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
@@ -228,31 +196,92 @@ func (t *TraceServiceImpl) Trace(ctx context.Context, traceRequest *pb.TraceRequ
 	if t.GatherMetrics && t.Metrics != nil {
 		metrics, err := t.gatherMetrics()
 		if err != nil {
-			logging.Debug("cannot set metrics because an error was returned")
-			logging.Error(err.Error())
+			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
 		} else {
-			trace.Metrics = metrics
+			traceData.Metrics = metrics
 		}
 	}
-
-	data, err := json.Marshal(&trace)
+	data, err := json.Marshal(&traceData)
 	if err != nil {
-		return nil, err
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
+
 	}
-
-	// if this update fails the id might not yet exists. Perhaps its best to verify and if it doesnt exist start a trace here
-	// else it will error out leading to difficult debug situations
-	docID, err := t.UpdateDocumentWithRetry(traceRequest.TraceId, ITEMS, data)
+	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
 	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
+		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
 	}
 
 	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
+}
 
-	combinedId := fmt.Sprintf("%s+%s", traceRequest.TraceId, traceRequest.ParentSpanId)
-	return &pb.TraceResponse{
-		CombinedId: combinedId,
-	}, nil
+func (t *TraceServiceImpl) Span(in *pb.ParabasisRequest_Span, traceID, ParentSpanID string) {
+	spanID := GenerateSpanID()
+
+	span := &pb.Span{
+		Action: in.Span.Action,
+		Status: in.Span.Status,
+		Common: &pb.TraceCommon{
+			ParentSpanId: ParentSpanID,
+			SpanId:       spanID,
+			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     SPAN,
+		},
+	}
+
+	data, err := json.Marshal(&span)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
+
+	}
+	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+	}
+
+	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanID, docID))
+}
+
+func (t *TraceServiceImpl) DatabaseSpan(in *pb.ParabasisRequest_DatabaseSpan, traceID, ParentSpanID string) {
+	spanId := GenerateSpanID()
+
+	timeEndedStr := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
+	timeEnded, err := time.Parse("2006-01-02'T'15:04:05.000", timeEndedStr)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error parsing time for trace ID %s: %s", traceID, err))
+	}
+
+	// Convert TimeTook to a time.Duration based on MS
+	duration := time.Duration(in.DatabaseSpan.TimeTook) * time.Millisecond
+	timeStartedStr := timeEnded.Add(-duration).Format("2006-01-02'T'15:04:05.000")
+
+	dbSpan := &pb.DatabaseSpan{
+		Query:        in.DatabaseSpan.Query,
+		TimeStarted:  timeStartedStr,
+		TimeFinished: timeEndedStr,
+		Hits:         in.DatabaseSpan.Hits,
+		Took:         fmt.Sprintf("%vms", in.DatabaseSpan.TimeTook),
+		Common: &pb.TraceCommon{
+			SpanId:       spanId,
+			ParentSpanId: ParentSpanID,
+			Timestamp:    timeEndedStr,
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     DATABASESPAN,
+		},
+	}
+
+	data, err := json.Marshal(dbSpan)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
+	}
+	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+	}
+
+	logging.Debug(fmt.Sprintf("added database span to id: %s", docID))
 }
 
 func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
@@ -273,100 +302,6 @@ func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
 		CpuHumanReadable:    metrics.Pod.CpuHumanReadable,
 		MemoryHumanReadable: metrics.Pod.MemoryHumanReadable,
 	}, nil
-}
-
-func (t *TraceServiceImpl) Span(ctx context.Context, spanRequest *pb.SpanRequest) (*pb.TraceResponse, error) {
-	span := pb.Span{
-		Action: spanRequest.Action,
-		Common: &pb.TraceCommon{
-			SpanId:    spanRequest.ParentSpanId,
-			Timestamp: time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-			PodName:   t.PodName,
-			Namespace: t.Namespace,
-			ItemType:  SPAN,
-		},
-	}
-
-	data, err := json.Marshal(&span)
-	if err != nil {
-		return nil, err
-	}
-
-	docID, err := t.UpdateDocumentWithRetry(spanRequest.TraceId, ITEMS, data)
-	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
-	}
-
-	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanRequest.ParentSpanId, docID))
-
-	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
-	return &pb.TraceResponse{
-		CombinedId: combinedId,
-	}, nil
-}
-
-func (t *TraceServiceImpl) DatabaseSpan(ctx context.Context, spanRequest *pb.DatabaseSpanRequest) (*pb.TraceResponse, error) {
-	spanId := t.generateSpanID()
-
-	timeEndedStr := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
-	timeEnded, err := time.Parse("2006-01-02'T'15:04:05.000", timeEndedStr)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert TimeTook to a time.Duration based on MS
-	duration := time.Duration(spanRequest.TimeTook) * time.Millisecond
-	timeStartedStr := timeEnded.Add(-duration).Format("2006-01-02'T'15:04:05.000")
-
-	span := pb.DatabaseSpan{
-		Query:        spanRequest.Query,
-		TimeStarted:  timeStartedStr,
-		TimeFinished: timeEndedStr,
-		Hits:         spanRequest.Hits,
-		Took:         fmt.Sprintf("%vms", spanRequest.TimeTook),
-		Common: &pb.TraceCommon{
-			SpanId:       spanId,
-			ParentSpanId: spanRequest.ParentSpanId,
-			Timestamp:    timeEndedStr,
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     DATABASESPAN,
-		},
-	}
-
-	data, err := json.Marshal(&span)
-	if err != nil {
-		return nil, err
-	}
-
-	docID, err := t.UpdateDocumentWithRetry(spanRequest.TraceId, ITEMS, data)
-	if err != nil {
-		return nil, fmt.Errorf("an error was returned by elasticSearch: %v", err)
-	}
-
-	logging.Debug(fmt.Sprintf("added database_span with id: %s to trace: %s", spanId, docID))
-
-	combinedId := fmt.Sprintf("%s+%s", spanRequest.TraceId, spanRequest.ParentSpanId)
-	return &pb.TraceResponse{
-		CombinedId: combinedId,
-	}, nil
-}
-
-func (t *TraceServiceImpl) generateSpanID() string {
-	// Create a byte slice to store the random data
-	randomBytes := make([]byte, 8)
-
-	// Read random data from the crypto/rand package
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		fmt.Println("Error generating random bytes:", err)
-		return ""
-	}
-
-	// Convert the random data to a hexadecimal string
-	spanID := hex.EncodeToString(randomBytes)
-
-	return spanID
 }
 
 func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {

@@ -8,7 +8,6 @@ import (
 	sophokles "github.com/odysseia-greek/attike/sophokles/tragedy"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -52,7 +51,6 @@ func NewTraceServiceImpl(env string) (*TraceServiceImpl, error) {
 	}
 
 	index := config.StringFromEnv(config.EnvIndex, config.TracingElasticIndex)
-	startTimeMap := make(map[string]time.Time)
 
 	gatherMetricsString := os.Getenv("GATHER_METRICS")
 	gatherMetrics, err := strconv.ParseBool(gatherMetricsString)
@@ -72,13 +70,15 @@ func NewTraceServiceImpl(env string) (*TraceServiceImpl, error) {
 		}
 	}
 
+	commands := make(chan MapCommand, 100)
+
 	return &TraceServiceImpl{
-		StartTimeMap:  startTimeMap,
 		PodName:       podName,
 		Namespace:     namespace,
 		Elastic:       elastic,
 		Index:         index,
 		Metrics:       metrics,
+		commands:      commands,
 		GatherMetrics: gatherMetrics,
 	}, nil
 }
