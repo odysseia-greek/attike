@@ -15,6 +15,7 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			requestId := r.Header.Get(config.HeaderKey)
+			w.Header().Set(config.HeaderKey, requestId)
 			trace := traceFromString(requestId)
 
 			if trace.Save {
