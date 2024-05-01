@@ -17,16 +17,12 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 			requestId := r.Header.Get(config.HeaderKey)
 			trace := traceFromString(requestId)
 
-			if !trace.Save {
-				f.ServeHTTP(w, r.WithContext(r.Context()))
-			}
-
 			if trace.Save {
-				go func() {
+				go func(traceCopy *pb.TraceBare) {
 					newSpan := GenerateSpanID()
 					parabasis := &pb.ParabasisRequest{
-						TraceId:      trace.TraceId,
-						ParentSpanId: trace.SpanId,
+						TraceId:      traceCopy.TraceId,
+						ParentSpanId: traceCopy.SpanId,
 						SpanId:       newSpan,
 						RequestType: &pb.ParabasisRequest_Trace{
 							Trace: &pb.TraceRequest{
@@ -37,19 +33,21 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 						},
 					}
 
-					trace.SpanId = newSpan
+					traceCopy.SpanId = newSpan
 
 					err := tracer.Send(parabasis)
 					if err != nil {
 						logging.Error(fmt.Sprintf("failed to send trace data: %v", err))
 					}
 
-					combinedId := CreateCombinedId(trace)
-
+					combinedId := CreateCombinedId(traceCopy)
 					ctx := context.WithValue(r.Context(), config.HeaderKey, combinedId)
 					f.ServeHTTP(w, r.WithContext(ctx))
-				}()
+				}(trace)
+				return
 			}
+
+			f.ServeHTTP(w, r.WithContext(r.Context()))
 		}
 	}
 }
