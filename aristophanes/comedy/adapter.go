@@ -42,12 +42,12 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 
 					combinedId := CreateCombinedId(traceCopy)
 					ctx := context.WithValue(r.Context(), config.HeaderKey, combinedId)
-					f.ServeHTTP(w, r.WithContext(ctx))
+					f(w, r.WithContext(ctx))
 				}(trace)
 				return
 			}
 
-			f.ServeHTTP(w, r.WithContext(r.Context()))
+			f(w, r)
 		}
 	}
 }
