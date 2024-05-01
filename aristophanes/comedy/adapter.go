@@ -9,10 +9,6 @@ import (
 	"net/http"
 )
 
-const (
-	SOMECONFIGKEY string = "aristophanescontext"
-)
-
 type Adapter func(http.HandlerFunc) http.HandlerFunc
 
 func Trace(tracer pb.TraceService_ChorusClient) Adapter {
@@ -23,13 +19,10 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 
 			if trace.Save {
 				newSpan := GenerateSpanID()
-
-				// Prepare the trace information synchronously
 				trace.SpanId = newSpan
 				combinedId := CreateCombinedId(trace)
-				ctx := context.WithValue(r.Context(), SOMECONFIGKEY, combinedId)
+				ctx := context.WithValue(r.Context(), config.DefaultTracingName, combinedId)
 
-				// Send the trace information asynchronously
 				go func() {
 					parabasis := &pb.ParabasisRequest{
 						TraceId:      trace.TraceId,
@@ -46,6 +39,8 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 					if err := tracer.Send(parabasis); err != nil {
 						logging.Error(fmt.Sprintf("failed to send trace data: %v", err))
 					}
+
+					logging.Trace(fmt.Sprintf("trace with requestID: %s and span: %s", requestId, newSpan))
 				}()
 
 				// Serve the request with the updated context
