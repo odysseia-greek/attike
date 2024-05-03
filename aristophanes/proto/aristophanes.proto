@@ -116,6 +116,7 @@ message CloseTraceRequest {
 message SpanRequest {
   string action = 1; // Action performed in the span
   string status = 2;
+  string time_finished = 3;
 }
 
 message DatabaseSpanRequest {
