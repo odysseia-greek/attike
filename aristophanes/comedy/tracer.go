@@ -220,6 +220,7 @@ func (t *TraceServiceImpl) Span(in *pb.ParabasisRequest_Span, traceID, ParentSpa
 	span := &pb.Span{
 		Action: in.Span.Action,
 		Status: in.Span.Status,
+		Took:   in.Span.Took,
 		Common: &pb.TraceCommon{
 			ParentSpanId: ParentSpanID,
 			SpanId:       spanID,

@@ -58,7 +58,8 @@ message TracingMetrics {
 message Span {
   string action = 1; // Action performed in the span
   string status = 2;
-  TraceCommon common = 3;
+  string took = 3;
+  TraceCommon common = 4;
 }
 
 message DatabaseSpan {
@@ -116,7 +117,7 @@ message CloseTraceRequest {
 message SpanRequest {
   string action = 1; // Action performed in the span
   string status = 2;
-  string time_finished = 3;
+  string took = 3;
 }
 
 message DatabaseSpanRequest {

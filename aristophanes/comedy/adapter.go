@@ -109,13 +109,13 @@ func TraceWithLogAndSpan(tracer pb.TraceService_ChorusClient) Adapter {
 				go func() {
 					parabasis := &pb.ParabasisRequest{
 						TraceId:      trace.TraceId,
-						ParentSpanId: trace.SpanId,
-						SpanId:       newSpan,
+						ParentSpanId: newSpan,
+						SpanId:       GenerateSpanID(),
 						RequestType: &pb.ParabasisRequest_Span{
 							Span: &pb.SpanRequest{
-								Action:       "CloseSpan",
-								TimeFinished: fmt.Sprintf("%v", duration),
-								Status:       fmt.Sprintf("status code: %d", statusCode),
+								Action: "CloseSpan",
+								Took:   fmt.Sprintf("%v", duration),
+								Status: fmt.Sprintf("status code: %d", statusCode),
 							},
 						},
 					}
