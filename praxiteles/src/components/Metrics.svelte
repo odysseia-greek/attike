@@ -34,7 +34,6 @@
     }
 
     async function fetchData(order, timeSpan) {
-        console.log(order, timeSpan)
         const variables = {
             order: order,
             timeSpan: timeSpan,

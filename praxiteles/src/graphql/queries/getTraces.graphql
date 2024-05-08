@@ -8,7 +8,7 @@ query GetTraces($input: TraceQueryInput!) {
 		totalTime
 		responseCode
 		items {
-			... on Trace {
+			... on StartTrace {
 				parentSpanID
 				spanID
 				method
@@ -21,6 +21,37 @@ query GetTraces($input: TraceQueryInput!) {
 				itemType
 				operation
 				rootQuery
+				metrics {
+					cpuHumanReadable
+					memoryHumanReadable
+					cpuRaw
+					memoryRaw
+				}
+			}
+			... on CloseTrace {
+				parentSpanID
+				timestamp
+				podName
+				namespace
+				itemType
+				responseBody
+				metrics {
+					cpuHumanReadable
+					memoryHumanReadable
+					cpuRaw
+					memoryRaw
+				}
+			}
+			... on Trace {
+				parentSpanID
+				spanID
+				method
+				url
+				host
+				timestamp
+				podName
+				namespace
+				itemType
 				metrics {
 					cpuHumanReadable
 					memoryHumanReadable

@@ -46,6 +46,10 @@ var itemType = graphql.NewUnion(graphql.UnionConfig{
 			return spanType
 		} else if _, isTrace := p.Value.(*Trace); isTrace {
 			return traceType
+		} else if _, isTraceStart := p.Value.(*TraceStart); isTraceStart {
+			return traceStartType
+		} else if _, isTraceClose := p.Value.(*TraceClose); isTraceClose {
+			return traceCloseType
 		}
 
 		return nil // Return nil if the type cannot be determined.
@@ -54,6 +58,8 @@ var itemType = graphql.NewUnion(graphql.UnionConfig{
 		databaseSpanType,
 		spanType,
 		traceType,
+		traceStartType,
+		traceCloseType,
 	},
 })
 
@@ -147,6 +153,43 @@ var traceType = graphql.NewObject(graphql.ObjectConfig{
 		"host": &graphql.Field{
 			Type: graphql.String,
 		},
+		"timestamp": &graphql.Field{
+			Type: graphql.String,
+		},
+		"podName": &graphql.Field{
+			Type: graphql.String,
+		},
+		"namespace": &graphql.Field{
+			Type: graphql.String,
+		},
+		"itemType": &graphql.Field{
+			Type: graphql.String,
+		},
+		"metrics": &graphql.Field{
+			Type: tracingMetrics,
+		},
+	},
+})
+
+// Define a GraphQL object type for "trace"
+var traceStartType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "StartTrace",
+	Fields: graphql.Fields{
+		"parentSpanID": &graphql.Field{
+			Type: graphql.String,
+		},
+		"spanID": &graphql.Field{
+			Type: graphql.String,
+		},
+		"method": &graphql.Field{
+			Type: graphql.String,
+		},
+		"url": &graphql.Field{
+			Type: graphql.String,
+		},
+		"host": &graphql.Field{
+			Type: graphql.String,
+		},
 		"remoteAddress": &graphql.Field{
 			Type: graphql.String,
 		},
@@ -166,6 +209,34 @@ var traceType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"rootQuery": &graphql.Field{
+			Type: graphql.String,
+		},
+		"metrics": &graphql.Field{
+			Type: tracingMetrics,
+		},
+	},
+})
+
+// Define a GraphQL object type for "trace"
+var traceCloseType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "CloseTrace",
+	Fields: graphql.Fields{
+		"parentSpanID": &graphql.Field{
+			Type: graphql.String,
+		},
+		"timestamp": &graphql.Field{
+			Type: graphql.String,
+		},
+		"podName": &graphql.Field{
+			Type: graphql.String,
+		},
+		"namespace": &graphql.Field{
+			Type: graphql.String,
+		},
+		"itemType": &graphql.Field{
+			Type: graphql.String,
+		},
+		"responseBody": &graphql.Field{
 			Type: graphql.String,
 		},
 		"metrics": &graphql.Field{

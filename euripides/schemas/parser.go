@@ -155,8 +155,8 @@ func parseTracesToGraphql(hits *models.Hits) []TraceObject {
 			if common, exists := item["common"].(map[string]interface{}); exists {
 				if itemType, exists := common["item_type"].(string); exists {
 					switch itemType {
-					case "trace":
-						var trace Trace
+					case "trace_start":
+						var trace TraceStart
 						traceMetrics := getMetrics(item)
 						trace.ParentSpanID = getStringFromMap(common, "parent_span_id")
 						trace.SpanID = getStringFromMap(common, "span_id")
@@ -166,6 +166,37 @@ func parseTracesToGraphql(hits *models.Hits) []TraceObject {
 						trace.RemoteAddress = getStringFromMap(item, "remote_address")
 						trace.Operation = getStringFromMap(item, "operation")
 						trace.RootQuery = getStringFromMap(item, "root_query")
+						trace.Timestamp = getStringFromMap(common, "timestamp")
+						trace.PodName = getStringFromMap(common, "pod_name")
+						trace.Namespace = getStringFromMap(common, "namespace")
+						trace.ItemType = itemType
+						if traceMetrics != nil {
+							trace.Metrics = traceMetrics
+						}
+						graphqlObjects = append(graphqlObjects, &trace)
+
+					case "trace_close":
+						var trace TraceClose
+						traceMetrics := getMetrics(item)
+						trace.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						trace.ResponseBody = getStringFromMap(item, "response_body")
+						trace.Timestamp = getStringFromMap(common, "timestamp")
+						trace.PodName = getStringFromMap(common, "pod_name")
+						trace.Namespace = getStringFromMap(common, "namespace")
+						trace.ItemType = itemType
+						if traceMetrics != nil {
+							trace.Metrics = traceMetrics
+						}
+						graphqlObjects = append(graphqlObjects, &trace)
+
+					case "trace":
+						var trace Trace
+						traceMetrics := getMetrics(item)
+						trace.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						trace.SpanID = getStringFromMap(common, "span_id")
+						trace.Method = getStringFromMap(item, "method")
+						trace.URL = getStringFromMap(item, "url")
+						trace.Host = getStringFromMap(item, "host")
 						trace.Timestamp = getStringFromMap(common, "timestamp")
 						trace.PodName = getStringFromMap(common, "pod_name")
 						trace.Namespace = getStringFromMap(common, "namespace")
@@ -295,6 +326,19 @@ type TraceObject struct {
 }
 
 type Trace struct {
+	ParentSpanID string   `json:"parent_span_id"`
+	SpanID       string   `json:"span_id"`
+	Method       string   `json:"method"`
+	URL          string   `json:"url"`
+	Host         string   `json:"host"`
+	Timestamp    string   `json:"timestamp"`
+	PodName      string   `json:"pod_name"`
+	Namespace    string   `json:"namespace"`
+	ItemType     string   `json:"item_type"`
+	Metrics      *Metrics `json:"metrics,omitempty"`
+}
+
+type TraceStart struct {
 	ParentSpanID  string   `json:"parent_span_id"`
 	SpanID        string   `json:"span_id"`
 	Method        string   `json:"method"`
@@ -308,6 +352,16 @@ type Trace struct {
 	Operation     string   `json:"operation"`
 	RootQuery     string   `json:"root_query"`
 	Metrics       *Metrics `json:"metrics,omitempty"`
+}
+
+type TraceClose struct {
+	ParentSpanID string   `json:"parent_span_id"`
+	Timestamp    string   `json:"timestamp"`
+	PodName      string   `json:"pod_name"`
+	Namespace    string   `json:"namespace"`
+	ItemType     string   `json:"item_type"`
+	ResponseBody string   `json:"response_body"`
+	Metrics      *Metrics `json:"metrics,omitempty"`
 }
 
 type Metrics struct {

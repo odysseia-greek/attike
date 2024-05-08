@@ -4,9 +4,15 @@ query BuildTraces($input: TraceQueryInput!) {
         traceID
         responseCode
         items {
-            ... on Trace {
+            ... on StartTrace {
                 podName
                 operation
+            }
+            ... on Trace {
+                podName
+            }
+            ... on CloseTrace {
+                podName
             }
             ... on Span {
                 podName

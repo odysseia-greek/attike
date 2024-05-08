@@ -18,7 +18,7 @@
             gridLineStartPadding: 20,
         },
         xyChart: {
-            width: 1200,
+            width: 2000,
             height: 600,
         }
     });

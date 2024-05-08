@@ -14,6 +14,8 @@ import (
 const (
 	TRACE        string = "trace"
 	SPAN         string = "span"
+	TRACESTART   string = "trace_start"
+	TRACECLOSE   string = "trace_close"
 	DATABASESPAN string = "database_span"
 	ITEMS        string = "items"
 )
@@ -86,7 +88,7 @@ func (t *TraceServiceImpl) StartTrace(start *pb.ParabasisRequest_StartTrace, tra
 			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
-			ItemType:     TRACE,
+			ItemType:     TRACESTART,
 		},
 	}
 
@@ -128,12 +130,13 @@ func (t *TraceServiceImpl) CloseTrace(close *pb.ParabasisRequest_CloseTrace, tra
 
 	traceData := pb.TraceStop{
 		ResponseBody: close.CloseTrace.ResponseBody,
+
 		Common: &pb.TraceCommon{
 			ParentSpanId: ParentSpanID,
 			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
-			ItemType:     TRACE,
+			ItemType:     TRACECLOSE,
 		},
 	}
 
