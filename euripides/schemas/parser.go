@@ -159,6 +159,7 @@ func parseTracesToGraphql(hits *models.Hits) []TraceObject {
 						var trace Trace
 						traceMetrics := getMetrics(item)
 						trace.ParentSpanID = getStringFromMap(common, "parent_span_id")
+						trace.SpanID = getStringFromMap(common, "span_id")
 						trace.Method = getStringFromMap(item, "method")
 						trace.URL = getStringFromMap(item, "url")
 						trace.Host = getStringFromMap(item, "host")
@@ -181,10 +182,8 @@ func parseTracesToGraphql(hits *models.Hits) []TraceObject {
 						span.Namespace = getStringFromMap(common, "namespace")
 						span.Timestamp = getStringFromMap(common, "timestamp")
 						span.PodName = getStringFromMap(common, "pod_name")
-						span.TimeStarted = getStringFromMap(item, "time_started")
-						span.TimeFinished = getStringFromMap(item, "time_finished")
-						span.RequestBody = getStringFromMap(item, "request_body")
-						span.ResponseCode = getIntFromMap(item, "response_code")
+						span.Took = getStringFromMap(item, "took")
+						span.Status = getStringFromMap(item, "status")
 						span.ItemType = itemType
 						span.Action = getStringFromMap(item, "action")
 						graphqlObjects = append(graphqlObjects, &span)
@@ -297,6 +296,7 @@ type TraceObject struct {
 
 type Trace struct {
 	ParentSpanID  string   `json:"parent_span_id"`
+	SpanID        string   `json:"span_id"`
 	Method        string   `json:"method"`
 	URL           string   `json:"url"`
 	Host          string   `json:"host"`
@@ -327,10 +327,8 @@ type Span struct {
 	PodName      string `json:"pod_name"`
 	ItemType     string `json:"item_type"`
 	Action       string `json:"action"`
-	RequestBody  string `json:"request_body"`
-	TimeStarted  string `json:"time_started"`
-	TimeFinished string `json:"time_finished"`
-	ResponseCode int    `json:"response_code"`
+	Status       string `json:"status"`
+	Took         string `json:"took"`
 }
 
 type DatabaseSpan struct {

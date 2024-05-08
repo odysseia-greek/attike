@@ -28,12 +28,14 @@ message TraceStart {
   string root_query = 6; // Graphql Root Query
   // Reuse TraceCommon for common fields
   TraceCommon common = 7;
+  TracingMetrics metrics = 8;
 }
 
 message TraceStop {
   string response_body = 1; // The response generated when a 200 is returned
   // Reuse TraceCommon for common fields
   TraceCommon common = 2;
+  TracingMetrics metrics = 3;
 }
 
 message Trace {

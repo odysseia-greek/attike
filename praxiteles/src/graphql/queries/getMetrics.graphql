@@ -1,6 +1,6 @@
 # getMetrics.graphql
-query GetMetrics($input: MetricsQueryInput!)  {
-    metrics(input: $input)  {
+query GetMetrics($order: String!, $timeSpan: String!)  {
+    metrics(order: $order, timeSpan: $timeSpan)  {
         nodes{
             nodeName
             cpuPercentageHumanReadable

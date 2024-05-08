@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/odysseia-greek/agora/aristoteles"
 	elasticModels "github.com/odysseia-greek/agora/aristoteles/models"
@@ -15,14 +14,12 @@ type EuripidesHandler struct {
 	MetricsIndex string
 }
 
-func (e *EuripidesHandler) Metrics(input map[string]interface{}) (*elasticModels.Hits, error) {
+func (e *EuripidesHandler) Metrics(timeSpan, order string) (*elasticModels.Hits, error) {
 	var query map[string]interface{}
 	var err error
 
-	query, err = e.createMetricsQuery(input)
+	query, err = e.createMetricsQuery(timeSpan, order)
 
-	jsonQuery, _ := json.Marshal(query)
-	logging.Debug(string(jsonQuery))
 	response, err := e.Elastic.Query().MatchWithScroll(e.MetricsIndex, query)
 	if err != nil {
 		return nil, err
@@ -44,8 +41,6 @@ func (e *EuripidesHandler) Tracing(input map[string]interface{}) (*elasticModels
 		}
 	}
 
-	jsonQuery, _ := json.Marshal(query)
-	logging.Debug(string(jsonQuery))
 	response, err := e.Elastic.Query().MatchWithScroll(e.TracingIndex, query)
 	if err != nil {
 		return nil, err
@@ -54,27 +49,37 @@ func (e *EuripidesHandler) Tracing(input map[string]interface{}) (*elasticModels
 	return &response.Hits, nil
 }
 
-func (e *EuripidesHandler) createMetricsQuery(input map[string]interface{}) (map[string]interface{}, error) {
+func (e *EuripidesHandler) createMetricsQuery(timeSpan, orderInput string) (map[string]interface{}, error) {
 	endTime := time.Now().UTC()
-	beginTime := endTime.Add(-1 * time.Hour) // Going back one hour from current time
+	timer := time.Hour
 
-	if beginTimeString, ok := input["beginTime"].(string); ok {
-		if parsedTime, err := time.Parse("2006-01-02T15:04:05.000", beginTimeString); err == nil {
-			beginTime = parsedTime
-		}
+	switch timeSpan {
+	case "hour":
+		timer = time.Hour
+	case "3hour":
+		timer = time.Hour * 3
+	case "6hour":
+		timer = time.Hour * 6
+	case "12hour":
+		timer = time.Hour * 12
+	case "day":
+		timer = time.Hour * 24
+	case "week":
+		timer = (time.Hour * 24) * 7
+	case "month":
+		timer = (time.Hour * 24) * 30
+	default:
+		timer = time.Hour
 	}
-	if endTimeString, ok := input["endTime"].(string); ok {
-		if parsedTime, err := time.Parse("2006-01-02T15:04:05.000", endTimeString); err == nil {
-			endTime = parsedTime
-		}
-	}
+	beginTime := endTime.Add(-1 * timer) // Going back one hour from current time
 
 	// Default sorting order
-	order := "desc"
-	if orderInput, ok := input["order"].(string); ok {
-		if orderInput == "asc" || orderInput == "desc" {
-			order = orderInput
-		}
+	var order string
+	if orderInput != "desc" && orderInput != "asc" {
+		logging.Error(fmt.Sprintf("order: %s not allowed defaulting to desc", order))
+		order = "desc"
+	} else {
+		order = orderInput
 	}
 
 	query := map[string]interface{}{

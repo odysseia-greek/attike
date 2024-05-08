@@ -66,6 +66,7 @@ func TraceWithLogAndSpan(tracer pb.TraceService_ChorusClient) Adapter {
 
 			if trace.Save {
 				newSpan := GenerateSpanID()
+				originalSpanId := trace.SpanId
 				trace.SpanId = newSpan
 				combinedId := CreateCombinedId(trace)
 				ctx := context.WithValue(r.Context(), config.DefaultTracingName, combinedId)
@@ -73,7 +74,7 @@ func TraceWithLogAndSpan(tracer pb.TraceService_ChorusClient) Adapter {
 				go func() {
 					parabasis := &pb.ParabasisRequest{
 						TraceId:      trace.TraceId,
-						ParentSpanId: trace.SpanId,
+						ParentSpanId: originalSpanId,
 						SpanId:       newSpan,
 						RequestType: &pb.ParabasisRequest_Trace{
 							Trace: &pb.TraceRequest{

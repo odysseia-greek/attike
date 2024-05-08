@@ -122,6 +122,7 @@
             }
         });
 
+        console.log(diagram)
         return diagram;
     }
 
@@ -163,17 +164,31 @@
             diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
         });
 
-        let spanItems = traceDataParsed.items.filter(item => item.itemType === 'span')
+        let spanItems = traceDataParsed.items.filter(item => item.itemType === 'span');
+
         const groupedSpans = spanItems.reduce((acc, item) => {
             if (!acc[item.spanID]) {
                 acc[item.spanID] = { start: null, end: null, podName: item.podName, parentSpanID: item.parentSpanID };
             }
-            // Assign start time if 'timeStarted' is present, else assign end time
-            if (item.timeStarted) {
-                acc[item.spanID].start = item.timeStarted;
-            } else if (item.timeFinished) {
-                acc[item.spanID].end = item.timeFinished;
+
+            // Assign start time from the timestamp
+            if (item.timestamp) {
+                acc[item.spanID].start = item.timestamp;
+
+                // Check if the 'took' field is present, then calculate and set the end time
+                if (item.took) {
+                    const correctedTimestamp = item.timestamp.replace(/'/g, '');
+                    const durationMs = parseFloat(item.took.replace('ms', ''));
+                    // Parse the timestamp to a Date object and add the duration
+                    const startTime = new Date(correctedTimestamp);
+                    const endTime = new Date(startTime.getTime() + durationMs);
+
+                    // Convert the end time back to ISO 8601 format string
+                    let localEndTime = `${endTime.getFullYear()}-${('0' + (endTime.getMonth()+1)).slice(-2)}-${('0' + endTime.getDate()).slice(-2)}'T'${('0' + endTime.getHours()).slice(-2)}:${('0' + endTime.getMinutes()).slice(-2)}:${('0' + endTime.getSeconds()).slice(-2)}.${('00' + endTime.getMilliseconds()).slice(-3)}`;
+                    acc[item.spanID].end = localEndTime;
+                }
             }
+
             return acc;
         }, {});
 
@@ -195,11 +210,22 @@
         diagram += `section Database\n`;
         let dataBaseItem = traceDataParsed.items.filter(item => item.itemType === 'database_span')
         dataBaseItem.forEach((item, index) => {
-            const taskStart = item.timeStarted;
-            const taskEnd = item.timeFinished
+            const taskStart = item.timestamp;
+            let taskEnd = null
             const taskLabel = item.podName;
 
-            diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+            // Check if the 'took' field is present, then calculate and set the end time
+            if (item.took) {
+                const correctedTimestamp = item.timestamp.replace(/'/g, '');
+                const durationMs = parseFloat(item.took.replace('ms', ''));
+                // Parse the timestamp to a Date object and add the duration
+                const startTime = new Date(correctedTimestamp);
+                const endTime = new Date(startTime.getTime() + durationMs);
+
+                // Convert the end time back to ISO 8601 format string
+                taskEnd = `${endTime.getFullYear()}-${('0' + (endTime.getMonth()+1)).slice(-2)}-${('0' + endTime.getDate()).slice(-2)}'T'${('0' + endTime.getHours()).slice(-2)}:${('0' + endTime.getMinutes()).slice(-2)}:${('0' + endTime.getSeconds()).slice(-2)}.${('00' + endTime.getMilliseconds()).slice(-3)}`;
+                diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+        }
         });
 
         return diagram;
@@ -234,9 +260,6 @@
 </script>
 
 <style>
-    .container {
-    }
-
     .traces-container,
     .visual-container {
         padding: 1em; /* Add padding in em units for spacing */
@@ -245,9 +268,6 @@
     .traces-container {
         margin-left: 10em;
         width: 60%;
-    }
-
-    .visual-container {
     }
 
 </style>

@@ -73,7 +73,7 @@ func (t *TraceServiceImpl) StartTrace(start *pb.ParabasisRequest_StartTrace, tra
 		Time:    traceTime,
 	}
 
-	trace := &pb.TraceStart{
+	traceData := &pb.TraceStart{
 		Method:        start.StartTrace.Method,
 		Url:           start.StartTrace.Url,
 		Host:          start.StartTrace.Host,
@@ -90,8 +90,17 @@ func (t *TraceServiceImpl) StartTrace(start *pb.ParabasisRequest_StartTrace, tra
 		},
 	}
 
+	if t.GatherMetrics && t.Metrics != nil {
+		metrics, err := t.gatherMetrics()
+		if err != nil {
+			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
+		} else {
+			traceData.Metrics = metrics
+		}
+	}
+
 	jsonData := map[string]interface{}{
-		"items":       []pb.TraceStart{*trace},
+		"items":       []pb.TraceStart{*traceData},
 		"isActive":    true,
 		"timeStarted": traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
 		"timeEnded":   "1970-01-01T00:00:00.000",                   // Default null-like value
@@ -126,6 +135,15 @@ func (t *TraceServiceImpl) CloseTrace(close *pb.ParabasisRequest_CloseTrace, tra
 			Namespace:    t.Namespace,
 			ItemType:     TRACE,
 		},
+	}
+
+	if t.GatherMetrics && t.Metrics != nil {
+		metrics, err := t.gatherMetrics()
+		if err != nil {
+			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
+		} else {
+			traceData.Metrics = metrics
+		}
 	}
 
 	data, err := json.Marshal(&traceData)
