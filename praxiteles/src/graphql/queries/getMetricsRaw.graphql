@@ -1,6 +1,6 @@
 # getMetricsRaw.graphql
-query GetMetrics($input: MetricsQueryInput!)  {
-    metrics(input: $input)  {
+query GetMetrics($order: String!, $timeSpan: String!)  {
+    metrics(order: $order, timeSpan: $timeSpan)  {
         timeStarted
         timeEnded
         timeStamps

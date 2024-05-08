@@ -82,127 +82,114 @@
         let diagram = `---\nState Diagram for ${traceDataParsed.traceID}\n---\n`;
         diagram += 'stateDiagram-v2\n';
 
-        // Create a mapping of spanID to podName for all spans
-        let spanIdToPodName = {};
-        traceDataParsed.items.filter(item => item.itemType === 'span').forEach(span => {
-            spanIdToPodName[span.spanID] = span.podName.split('-')[0];
+        // Create a mapping of spanID to podName for all traces
+        let traceIdToPodName = {};
+        traceDataParsed.items.filter(item => item.itemType === 'trace').forEach(trace => {
+            traceIdToPodName[trace.spanID] = trace.podName.split('-')[0];
         });
 
         let firstServicePodName = "";
         // Initialize the diagram with the first service
-        if (traceDataParsed.items.length > 0 && traceDataParsed.items[0].itemType === 'trace') {
+        if (traceDataParsed.items.length > 0 && traceDataParsed.items[0].itemType === 'trace_start') {
             firstServicePodName = traceDataParsed.items[0].podName.split('-')[0];
+            traceIdToPodName[traceDataParsed.items[0].spanID] = firstServicePodName;
             if (firstServicePodName) {
                 diagram += `    [*] --> ${firstServicePodName}\n`;
             }
         }
 
-        let firstTransitionAdded = false;
-
         // Iterate through traces to create transitions based on parentSpanID -> spanID mapping
         traceDataParsed.items.filter(item => item.itemType === 'trace').forEach(trace => {
-            const parentService = spanIdToPodName[trace.parentSpanID];
+            const parentService = traceIdToPodName[trace.parentSpanID];
             const childService = trace.podName.split('-')[0]; // Directly use trace podName if no spanID -> podName mapping
 
             // Add transition if parentService is identified
-            if (parentService && childService) {
+            if (parentService && childService && parentService !== childService) {
                 const transition = `    ${parentService} --> ${childService}`;
                 diagram += `${transition}\n`;
 
-                // Add the missing link between the firstServicePodName and the first parentService
-                if (!firstTransitionAdded && firstServicePodName && firstServicePodName !== childService) {
-                    diagram += `    ${firstServicePodName} --> ${parentService}\n`;
-                    firstTransitionAdded = true; // Ensure this transition is only added once
-                }
-            }
-
-            if (!firstTransitionAdded && parentService === undefined  && firstServicePodName !== childService) {
-                diagram += `    ${firstServicePodName} --> ${childService}\n`;
-                firstTransitionAdded = true; // Ensure this transition is only added once
             }
         });
 
         return diagram;
     }
-
     function convertTraceToGannt(traceData) {
         let traceDataParsed = JSON.parse(traceData);
 
+        let traceStartItem = traceDataParsed.items.find(item => item.itemType === 'trace_start');
+        if (!traceStartItem) {
+            return; // Exit if no trace_start item is found
+        }
+
         let diagram = 'gantt\n';
-        diagram += `dateFormat YYYY-MM-DD'T'HH:mm:ss.SSS\n`; // Set the date format to match your timestamp format
+        diagram += `dateFormat YYYY-MM-DD'T'HH:mm:ss.SSS\n`; // Set the date format
         diagram += `axisFormat %Y-%m-%d | %H:%M:%S.%L\n`
         diagram += `title Trace Gantt Chart for ${traceDataParsed.traceID}\n`;
-
-        // Adding a section for the overall ParentTrace timeline
         diagram += `section Parent\n`;
         diagram += `Overall Timeline :milestone, ${traceDataParsed.timeStarted}, ${traceDataParsed.timeEnded}\n`;
 
-        // Filter out 'span' items and sort by 'timestamp'
+        let parsedEndTime = traceDataParsed.timeEnded.replace('T', "'T'");
+        diagram += `section Trace\n`;
+        diagram += `    ${traceStartItem.podName} :${1}, ${traceStartItem.timestamp}, ${parsedEndTime}\n`;
+
         let traceItems = traceDataParsed.items.filter(item => item.itemType === 'trace')
             .sort((a, b) => {
-                // Replace 'T' with a space for correct date parsing
-                const dateA = new Date(a.timestamp.replace('T', ' '));
-                const dateB = new Date(b.timestamp.replace('T', ' '));
+                const dateA = new Date(a.timestamp.replace("'T'", " "));
+                const dateB = new Date(b.timestamp.replace("'T'", " "));
                 return dateA - dateB;
             });
 
-        // Determine the overall start and end times for the Trace section
-        let traceEnd = traceItems[traceItems.length - 1].timestamp;
-        if (new Date(traceDataParsed.timeEnded) > new Date(traceEnd)) {
-            traceEnd = traceDataParsed.timeEnded; // Use parent's end time if it's later
-        }
-
-        // Adding the main section for Trace items
-        diagram += `section Trace\n`;
-
         traceItems.forEach((item, index) => {
-            const taskStart = item.timestamp;
-            const taskEnd = index < traceItems.length - 1 ? traceItems[index + 1].timestamp : traceEnd; // Use next item's timestamp or the overall trace end time
-            const taskLabel = item.podName;
-
-            diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+            const taskEnd = index < traceItems.length - 1 ? traceItems[index + 1].timestamp : traceDataParsed.timeEnded;
+            diagram += `    ${item.podName} :${index + 2}, ${item.timestamp}, ${taskEnd}\n`;
         });
 
         let spanItems = traceDataParsed.items.filter(item => item.itemType === 'span')
-        const groupedSpans = spanItems.reduce((acc, item) => {
-            if (!acc[item.spanID]) {
-                acc[item.spanID] = { start: null, end: null, podName: item.podName, parentSpanID: item.parentSpanID };
-            }
-            // Assign start time if 'timeStarted' is present, else assign end time
-            if (item.timeStarted) {
-                acc[item.spanID].start = item.timeStarted;
-            } else if (item.timeFinished) {
-                acc[item.spanID].end = item.timeFinished;
-            }
-            return acc;
-        }, {});
-
-        const mergedSpans = Object.entries(groupedSpans).map(([spanID, { start, end, podName, parentSpanID }]) => ({
-            spanID,
-            podName,
-            parentSpanID,
-            timeStarted: start,
-            timeFinished: end
-        }));
+            .map(item => ({
+                ...item,
+                startTime: calculateStartTime(item.timestamp, item.took)
+            }))
+            .sort((a, b) => {
+                const dateA = new Date(a.startTime.replace("'T'", " "));
+                const dateB = new Date(b.startTime.replace("'T'", " "));
+                return dateA - dateB;
+            });
 
         diagram += `section Span\n`;
-        mergedSpans.forEach((item, index) => {
-            const taskLabel = `${item.spanID} - ${item.podName}`;
-            // Now including parentID and the podName of the starter in the output
-            diagram += `    ${taskLabel} (${item.parentSpanID}):${index + 1}, ${item.timeStarted }, ${item.timeFinished}\n`;
+        spanItems.forEach((item, index) => {
+            diagram += `    ${item.spanID} - ${item.podName} (${item.parentSpanID}):${index + 1}, ${item.startTime}, ${item.timestamp}\n`;
         });
 
-        diagram += `section Database\n`;
-        let dataBaseItem = traceDataParsed.items.filter(item => item.itemType === 'database_span')
-        dataBaseItem.forEach((item, index) => {
-            const taskStart = item.timeStarted;
-            const taskEnd = item.timeFinished
-            const taskLabel = item.podName;
+        let databaseItems = traceDataParsed.items.filter(item => item.itemType === 'database_span')
+            .map(item => ({
+                ...item,
+                startTime: calculateStartTime(item.timestamp, item.took)
+            }))
+            .sort((a, b) => {
+                const dateA = new Date(a.startTime.replace("'T'", " "));
+                const dateB = new Date(b.startTime.replace("'T'", " "));
+                return dateA - dateB;
+            });
 
-            diagram += `    ${taskLabel} :${index + 1}, ${taskStart}, ${taskEnd}\n`;
+        diagram += `section Database\n`;
+        databaseItems.forEach((item, index) => {
+            diagram += `    ${item.podName} :${index + 1}, ${item.startTime}, ${item.timestamp}\n`;
         });
 
         return diagram;
+    }
+
+    // Helper function to calculate start time
+    function calculateStartTime(startTime, duration) {
+        if (!duration) {
+            return startTime;
+        }
+        const correctedTimestamp = startTime.replace(/'/g, '');
+        const durationMs = parseFloat(duration.replace('ms', ''));
+        const endDateTime = new Date(correctedTimestamp);
+        const startDateTime = new Date(endDateTime.getTime() - durationMs);
+
+        return `${startDateTime.getFullYear()}-${('0' + (startDateTime.getMonth() + 1)).slice(-2)}-${('0' + startDateTime.getDate()).slice(-2)}'T'${('0' + startDateTime.getHours()).slice(-2)}:${('0' + startDateTime.getMinutes()).slice(-2)}:${('0' + startDateTime.getSeconds()).slice(-2)}.${('00' + startDateTime.getMilliseconds()).slice(-3)}`;
     }
 
     function createLineDiagram(filteredTraces) {
@@ -234,9 +221,6 @@
 </script>
 
 <style>
-    .container {
-    }
-
     .traces-container,
     .visual-container {
         padding: 1em; /* Add padding in em units for spacing */
@@ -245,9 +229,6 @@
     .traces-container {
         margin-left: 10em;
         width: 60%;
-    }
-
-    .visual-container {
     }
 
 </style>

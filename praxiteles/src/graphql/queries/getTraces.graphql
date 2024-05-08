@@ -8,8 +8,9 @@ query GetTraces($input: TraceQueryInput!) {
 		totalTime
 		responseCode
 		items {
-			... on Trace {
+			... on StartTrace {
 				parentSpanID
+				spanID
 				method
 				url
 				host
@@ -27,6 +28,37 @@ query GetTraces($input: TraceQueryInput!) {
 					memoryRaw
 				}
 			}
+			... on CloseTrace {
+				parentSpanID
+				timestamp
+				podName
+				namespace
+				itemType
+				responseBody
+				metrics {
+					cpuHumanReadable
+					memoryHumanReadable
+					cpuRaw
+					memoryRaw
+				}
+			}
+			... on Trace {
+				parentSpanID
+				spanID
+				method
+				url
+				host
+				timestamp
+				podName
+				namespace
+				itemType
+				metrics {
+					cpuHumanReadable
+					memoryHumanReadable
+					cpuRaw
+					memoryRaw
+				}
+			}
 			... on Span {
 				parentSpanID
 				spanID
@@ -35,9 +67,8 @@ query GetTraces($input: TraceQueryInput!) {
 				podName
 				itemType
 				action
-				timeStarted
-				timeFinished
-				responseCode
+				status
+				took
 			}
 			... on DatabaseSpan {
 				parentSpanID
@@ -47,8 +78,6 @@ query GetTraces($input: TraceQueryInput!) {
 				namespace
 				timestamp
 				podName
-				timeStarted
-				timeFinished
 				took
 				hits
 			}

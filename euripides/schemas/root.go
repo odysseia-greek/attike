@@ -1,6 +1,7 @@
 package schemas
 
 import (
+	"fmt"
 	"github.com/graphql-go/graphql"
 	"github.com/odysseia-greek/attike/euripides/handlers"
 	"log"
@@ -59,14 +60,24 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 		"metrics": &graphql.Field{
 			Type: metricsType,
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{
-					Type: MetricsQueryInputType,
+				"timeSpan": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"order": &graphql.ArgumentConfig{
+					Type: graphql.String,
 				},
 			},
 
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				input, _ := p.Args["input"].(map[string]interface{})
-				result, err := handler.Metrics(input)
+				timeSpan, isOK := p.Args["timeSpan"].(string)
+				if !isOK {
+					return nil, fmt.Errorf("expected argument timeSpan")
+				}
+				order, isOK := p.Args["order"].(string)
+				if !isOK {
+					return nil, fmt.Errorf("expected argument order")
+				}
+				result, err := handler.Metrics(timeSpan, order)
 				if err != nil {
 					return nil, err
 				}

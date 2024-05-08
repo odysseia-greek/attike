@@ -42,6 +42,8 @@ func main() {
 		log.Fatalf("error creating TraceServiceClient: %v", err)
 	}
 
+	go traceClient.ManageStartTimeMap()
+
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

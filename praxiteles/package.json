@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "rm -rf public/build",
     "build": "rollup -c",
+    "predev": "rm -rf public/build",
     "dev": "rollup -c -w --port 3000",
     "start": "sirv public --no-clear --port 3000"
   },

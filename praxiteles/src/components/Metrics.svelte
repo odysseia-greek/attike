@@ -13,22 +13,64 @@
 
     // Declare a variable to store the query result
     let queryResult = null; // Declare queryResult here
+    let rawResult = null; // set the raw result
     let pieChartMemory = null;
     let pieChartCpu = null;
     let barChartMemory = null;
     let barChartCpu = null;
 
+    let order = "desc"; // Default order
+    let timeSpan = "hour"; // Default time span
+    let selectedTimeStamp = '';
+    let timeStamps = [];
 
-    function convertToPieChart(rawResult) {
+    // Reactive statement to update data based on user input
+    $: {
+        fetchData(order, timeSpan);
+    }
+
+    $: if (selectedTimeStamp) {
+        updatePieCharts(selectedTimeStamp);
+    }
+
+    async function fetchData(order, timeSpan) {
+        const variables = {
+            order: order,
+            timeSpan: timeSpan,
+        };
+
+        const result = await client.query({
+            query: GET_METRICS,
+            variables,
+        });
+        queryResult = result.data;
+
+        const rawResultQuery = await client.query({
+            query: GET_METRICS_RAW,
+            variables,
+        });
+        rawResult = rawResultQuery.data;
+        timeStamps = rawResult.metrics.timeStamps;
+
+        convertToPieChart(rawResult);
+        convertToMemoryChart(rawResult);
+        convertToCpuChart(rawResult);
+    }
+
+    function updatePieCharts(timeStamp) {
+        const timestampIndex = timeStamps.findIndex(ts => ts === timeStamp);
+        convertToPieChart(rawResult, timestampIndex);
+    }
+
+    function convertToPieChart(rawResult, timestampIndex = 0) {
         let diagramMemory = 'pie title Pie chart for Memory\n';
         let diagramCpu = 'pie title Pie chart for CPU\n';
 
         if (rawResult && rawResult.metrics && rawResult.metrics.grouped) {
-            rawResult.metrics.grouped.forEach((item, index) => {
-                const memoryValue = (item.memoryRaw && item.memoryRaw.length > 0) ? item.memoryRaw[0] : 0;
-                const cpuValue = (item.cpuRaw && item.cpuRaw.length > 0) ? item.cpuRaw[0] : 0;
+            rawResult.metrics.grouped.forEach(item => {
+                const memoryValue = item.memoryRaw && item.memoryRaw[timestampIndex] ? item.memoryRaw[timestampIndex] : 0;
+                const cpuValue = item.cpuRaw && item.cpuRaw[timestampIndex] ? item.cpuRaw[timestampIndex] : 0;
 
-                // Add to pie chart data only if there's a non-zero value to display
                 if (cpuValue !== 0) {
                     diagramCpu += `    "${item.name || 'Unknown'} - ${cpuValue}Mi" : ${cpuValue}\n`;
                 }
@@ -38,9 +80,10 @@
             });
         }
 
-        pieChartMemory = diagramMemory
-        pieChartCpu = diagramCpu
+        pieChartMemory = diagramMemory;
+        pieChartCpu = diagramCpu;
     }
+
 
     function convertToCpuChart(rawResult) {
         let timestamps = formatTimestamps(rawResult.metrics.timeStamps);
@@ -86,28 +129,7 @@
     }
 
     onMount(async () => {
-        // Trigger the GraphQL query with the updated variables
-        const variables = {
-            input: {},
-        };
-
-        // Trigger the GraphQL query with the updated variables
-        const result = await client.query({
-            query: GET_METRICS,
-            variables: variables,
-        });
-
-        queryResult = result.data;
-
-        const rawResultQuery = await client.query({
-            query: GET_METRICS_RAW,
-            variables: variables,
-        })
-
-        const rawResult = rawResultQuery.data;
-        convertToPieChart(rawResult)
-        convertToMemoryChart(rawResult)
-        convertToCpuChart(rawResult)
+        await fetchData(order, timeSpan)
     });
 
 
@@ -130,6 +152,37 @@
 <div class="container">
     <div class="metrics-container">
         <h2 id="metrics">Metrics</h2>
+        <h4>Order:</h4>
+        <label>
+            <input type="radio" bind:group={order} value="desc"> Descending
+        </label>
+        <label>
+            <input type="radio" bind:group={order} value="asc"> Ascending
+        </label>
+
+        <!-- Inserted Radio Buttons for 'timeSpan' -->
+        <h4>Time Span:</h4>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="hour"> Hour
+        </label>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="3hour"> 3 Hours
+        </label>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="6hour"> 6 Hours
+        </label>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="12hour"> 12 Hours
+        </label>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="day"> 24 Hours
+        </label>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="week"> Week
+        </label>
+        <label>
+            <input type="radio" bind:group={timeSpan} value="month"> Month
+        </label>
         {#if queryResult}
             <h3>Results:</h3>
             <JSONViewWrapper jsonString={JSON.stringify(queryResult.metrics, null, 2)} />
@@ -140,6 +193,14 @@
     <div class="visual-container">
         <h2 id="metrics-visual">Diagrams</h2>
         {#if pieChartCpu}
+            <div class="options-dropdown">
+                <select bind:value={selectedTimeStamp}>
+                    <option value="">Select a timeStamp</option>
+                    {#each timeStamps as timeStamp }
+                        <option value={timeStamp}>{timeStamp}</option>
+                    {/each}
+                </select>
+            </div>
             <Diagram mermaidDiagram={pieChartCpu} />
         {:else}
             <p>No data available for visualization.</p>

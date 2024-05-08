@@ -3,11 +3,9 @@ module github.com/odysseia-greek/attike/aristophanes
 go 1.22.0
 
 require (
-	github.com/google/uuid v1.6.0
-	github.com/odysseia-greek/agora/aristoteles v0.1.4
-	github.com/odysseia-greek/agora/plato v0.1.15
+	github.com/odysseia-greek/agora/aristoteles v0.1.6
+	github.com/odysseia-greek/agora/plato v0.1.17
 	github.com/odysseia-greek/attike/sophokles v0.0.5
-	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
 )
@@ -30,6 +28,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
@@ -52,6 +51,7 @@ require (
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	golang.org/x/net v0.21.0 // indirect
