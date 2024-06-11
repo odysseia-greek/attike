@@ -23,7 +23,7 @@ func main() {
 |_____| \__,_||__|\_||____||__| |____||_____||_____| \___|
                                                           
 `)
-	logging.System(`	κακῶς φρονοῦντες· ὡς τρὶς ἂν παρ’ ἀσπίδα στῆναι θέλοιμ’ ἂν μᾶλλον ἢ τεκεῖν ἅπαξ.`)
+	logging.System(`κακῶς φρονοῦντες· ὡς τρὶς ἂν παρ’ ἀσπίδα στῆναι θέλοιμ’ ἂν μᾶλλον ἢ τεκεῖν ἅπαξ.`)
 	logging.System("How wrong they are! I would rather stand three times with a shield in battle than give birth once.\n")
 	logging.System("Starting up...")
 
