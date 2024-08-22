@@ -5,25 +5,30 @@ metadata:
 deploy:
   kubeContext: k3d-odysseia
   tolerateFailuresUntilDeadline: true
+
 build:
   local:
     push: false
-  artifacts:
-    - image: ghcr.io/odysseia-greek/sophokles
-      context: sophokles
-      docker:
-        target: prod
-        buildArgs:
-          project_name: sophokles
-          TARGETOS: linux
-          TARGETARCH: arm64
-      sync:
-        manual:
-          - src: '**/*.go'
-            dest: '/app'
 
-manifests:
-  rawYaml:
-    - sophokles/infra/manifest.yaml
 profiles:
-  - name: dev
+  - name: aristophanes
+    build:
+      artifacts:
+        - image: ghcr.io/odysseia-greek/aristophanes
+          context: ./aristophanes
+          docker:
+            target: debug
+          sync:
+            manual:
+              - src: '**/*.go'
+                dest: '/app'
+    deploy:
+      helm:
+        releases:
+          - name: aristophanes
+            chartPath: ../../odysseia-greek/mykenai/themistokles/odysseia/charts/aristophanes
+            valuesFiles:
+              - ../../odysseia-greek/mykenai/themistokles/odysseia/values/local.yaml
+              - ../../odysseia-greek/mykenai/themistokles/odysseia/values/skaffold-values.yaml
+            setValues:
+              image.odysseiaapi.repo: aristophanes
