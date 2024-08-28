@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/odysseia-greek/agora/aristoteles v0.1.6
-	github.com/odysseia-greek/agora/plato v0.1.15
+	github.com/odysseia-greek/agora/aristoteles v0.1.7
+	github.com/odysseia-greek/agora/plato v0.1.41
 	github.com/odysseia-greek/agora/thales v0.1.9
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3

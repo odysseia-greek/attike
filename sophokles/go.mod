@@ -3,7 +3,7 @@ module github.com/odysseia-greek/attike/sophokles
 go 1.22.0
 
 require (
-	github.com/odysseia-greek/agora/plato v0.1.15
+	github.com/odysseia-greek/agora/plato v0.1.41
 	github.com/odysseia-greek/agora/thales v0.1.9
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.63.2
