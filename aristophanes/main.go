@@ -34,10 +34,8 @@ func main() {
 	logging.System("Brekekekex koax koax. You never beat me in this play!")
 	logging.System("Starting up...")
 
-	env := os.Getenv("ENV")
-
 	// Create the TraceServiceClient using the environment
-	traceClient, err := comedy.NewTraceServiceImpl(env)
+	traceClient, err := comedy.NewTraceServiceImpl()
 	if err != nil {
 		log.Fatalf("error creating TraceServiceClient: %v", err)
 	}
