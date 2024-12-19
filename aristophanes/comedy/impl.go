@@ -48,9 +48,12 @@ type ClientTracer struct {
 	tracer pb.TraceServiceClient
 }
 
-func NewClientTracer() (*ClientTracer, error) {
+func NewClientTracer(serviceAddress string) (*ClientTracer, error) {
 	// Initialize the gRPC client for the tracing service
-	conn, err := grpc.Dial(DefaultAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if serviceAddress == "" {
+		serviceAddress = DefaultAddress
+	}
+	conn, err := grpc.NewClient(serviceAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to tracing service: %w", err)
 	}
