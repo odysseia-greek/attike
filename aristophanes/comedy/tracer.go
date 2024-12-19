@@ -189,6 +189,7 @@ func (t *TraceServiceImpl) CloseTrace(close *pb.ParabasisRequest_CloseTrace, tra
 	doc, err := t.Elastic.Document().Update(t.Index, traceID, update)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+		return
 	}
 
 	t.commands <- MapCommand{
@@ -230,6 +231,7 @@ func (t *TraceServiceImpl) Trace(in *pb.ParabasisRequest_Trace, traceID, ParentS
 	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+		return
 	}
 
 	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
@@ -260,6 +262,7 @@ func (t *TraceServiceImpl) Span(in *pb.ParabasisRequest_Span, traceID, ParentSpa
 	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+		return
 	}
 
 	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanID, docID))
@@ -301,6 +304,7 @@ func (t *TraceServiceImpl) DatabaseSpan(in *pb.ParabasisRequest_DatabaseSpan, tr
 	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+		return
 	}
 
 	logging.Debug(fmt.Sprintf("added database span to id: %s", docID))
@@ -328,19 +332,22 @@ func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
 
 func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
 	maxRetries := 10
-	retryDelay := 50 * time.Millisecond
+	retryDelay := 100 * time.Millisecond
+	var tenTriesError error
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		doc, err := t.Elastic.Document().AddItemToDocument(t.Index, traceID, string(data), itemName)
+
 		if err == nil {
 			return doc.ID, nil
 		}
 
 		if attempt < maxRetries {
+			tenTriesError = err
 			// Sleep before the next retry
 			time.Sleep(retryDelay)
 		}
 	}
 
-	return "", fmt.Errorf("failed after %d attempts", maxRetries)
+	return "", fmt.Errorf("error updating document for trace ID %s: %s", traceID, tenTriesError.Error())
 }
