@@ -8,6 +8,8 @@ import (
 	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	pbm "github.com/odysseia-greek/attike/sophokles/proto"
 	"io"
+	"runtime/debug"
+	"strings"
 	"time"
 )
 
@@ -19,6 +21,18 @@ const (
 	DATABASESPAN string = "database_span"
 	ITEMS        string = "items"
 )
+
+type ElasticsearchError struct {
+	Error struct {
+		RootCause []struct {
+			Type string `json:"type"`
+		} `json:"root_cause"`
+		Type   string `json:"type"`
+		Reason string `json:"reason"`
+		Status int    `json:"status"`
+	} `json:"error"`
+	Status int `json:"status"`
+}
 
 func (t *TraceServiceImpl) ManageStartTimeMap() {
 	startTimeMap := make(map[string]time.Time)
@@ -52,15 +66,25 @@ func (t *TraceServiceImpl) Chorus(stream pb.TraceService_ChorusServer) error {
 
 		switch req := in.RequestType.(type) {
 		case *pb.ParabasisRequest_StartTrace:
-			go t.StartTrace(req, in.TraceId, in.ParentSpanId)
+			go t.safeExecute(func() {
+				t.StartTrace(req, in.TraceId, in.ParentSpanId)
+			})
 		case *pb.ParabasisRequest_Trace:
-			go t.Trace(req, in.TraceId, in.ParentSpanId, in.SpanId)
+			go t.safeExecute(func() {
+				t.Trace(req, in.TraceId, in.ParentSpanId, in.SpanId)
+			})
 		case *pb.ParabasisRequest_CloseTrace:
-			go t.CloseTrace(req, in.TraceId, in.ParentSpanId)
+			go t.safeExecute(func() {
+				t.CloseTrace(req, in.TraceId, in.ParentSpanId)
+			})
 		case *pb.ParabasisRequest_Span:
-			go t.Span(req, in.TraceId, in.ParentSpanId)
+			go t.safeExecute(func() {
+				t.Span(req, in.TraceId, in.ParentSpanId)
+			})
 		case *pb.ParabasisRequest_DatabaseSpan:
-			go t.DatabaseSpan(req, in.TraceId, in.ParentSpanId)
+			go t.safeExecute(func() {
+				t.DatabaseSpan(req, in.TraceId, in.ParentSpanId)
+			})
 		default:
 			logging.Debug(fmt.Sprintf("Unhandled trace request type: %s", req))
 		}
@@ -331,7 +355,7 @@ func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
 }
 
 func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
-	maxRetries := 10
+	maxRetries := 5
 	retryDelay := 100 * time.Millisecond
 	var tenTriesError error
 
@@ -342,6 +366,16 @@ func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, dat
 			return doc.ID, nil
 		}
 
+		var esErr ElasticsearchError
+		splitError := strings.SplitN(err.Error(), ":", 2)[1]
+		if parseErr := json.Unmarshal([]byte(splitError), &esErr); parseErr == nil {
+			if esErr.Error.Type == "document_missing_exception" && esErr.Status == 404 {
+				logging.Debug("Document missing, no use in retrying")
+				logging.Error(splitError)
+				return "", nil
+			}
+		}
+
 		if attempt < maxRetries {
 			tenTriesError = err
 			// Sleep before the next retry
@@ -350,4 +384,13 @@ func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, dat
 	}
 
 	return "", fmt.Errorf("error updating document for trace ID %s: %s", traceID, tenTriesError.Error())
+}
+
+func (t *TraceServiceImpl) safeExecute(action func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			logging.Warn(fmt.Sprintf("Recovered from panic: %v\n%s", r, debug.Stack()))
+		}
+	}()
+	action()
 }

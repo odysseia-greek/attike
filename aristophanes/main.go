@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const standardPort = ":50052"
@@ -40,7 +42,14 @@ func main() {
 		log.Fatalf("error creating TraceServiceClient: %v", err)
 	}
 
-	go traceClient.ManageStartTimeMap()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logging.Warn(fmt.Sprintf("Recovered from panic in ManageStartTimeMap: %v", r))
+			}
+		}()
+		traceClient.ManageStartTimeMap()
+	}()
 
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -48,13 +57,23 @@ func main() {
 	}
 
 	var server *grpc.Server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	server = grpc.NewServer()
 
 	pb.RegisterTraceServiceServer(server, traceClient)
 
-	logging.System(fmt.Sprintf("Server listening on %s", port))
-	if err := server.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	go func() {
+		logging.System(fmt.Sprintf("Server listening on %s", port))
+		if err := server.Serve(listener); err != nil && err != grpc.ErrServerStopped {
+			log.Fatalf("Failed to serve: %v", err)
+		}
+	}()
+
+	<-quit
+	logging.Warn("Shutting down gRPC server...")
+
+	server.GracefulStop()
+	logging.Warn("gRPC server stopped.")
 }
