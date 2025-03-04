@@ -2,6 +2,16 @@ schema {
   query: RootQuery
 }
 
+type CloseTrace {
+  itemType: String
+  metrics: tracingMetrics
+  namespace: String
+  parentSpanID: String
+  podName: String
+  responseBody: String
+  timestamp: String
+}
+
 type DatabaseSpan {
   hits: Int
   itemType: String
@@ -10,8 +20,6 @@ type DatabaseSpan {
   podName: String
   query: String
   spanID: String
-  timeFinished: String
-  timeStarted: String
   timestamp: String
   took: String
 }
@@ -24,7 +32,7 @@ type Grouped {
   name: String
 }
 
-union Item = DatabaseSpan | Span | Trace
+union Item = DatabaseSpan | Span | Trace | StartTrace | CloseTrace
 
 type Metrics {
   cpuUnits: String
@@ -35,12 +43,6 @@ type Metrics {
   timeEnded: String
   timeStamps: [String]
   timeStarted: String
-}
-
-input MetricsQueryInput {
-  beginTime: String
-  endTime: String
-  order: String
 }
 
 type Node {
@@ -74,7 +76,7 @@ type Pod {
 }
 
 type RootQuery {
-  metrics(input: MetricsQueryInput): Metrics
+  metrics(order: String, timeSpan: String): Metrics
 
   """Get traces"""
   traces(input: TraceQueryInput): [ParentTrace]
@@ -87,14 +89,13 @@ type Span {
   parentSpanID: String
   podName: String
   requestBody: String
-  responseCode: Int
   spanID: String
-  timeFinished: String
-  timeStarted: String
+  status: String
   timestamp: String
+  took: String
 }
 
-type Trace {
+type StartTrace {
   host: String
   itemType: String
   method: String
@@ -105,18 +106,32 @@ type Trace {
   podName: String
   remoteAddress: String
   rootQuery: String
+  spanID: String
+  timestamp: String
+  url: String
+}
+
+type Trace {
+  host: String
+  itemType: String
+  method: String
+  metrics: tracingMetrics
+  namespace: String
+  parentSpanID: String
+  podName: String
+  spanID: String
   timestamp: String
   url: String
 }
 
 input TraceQueryInput {
+  statusCode: Int
+  beginTime: String
+  endTime: String
   totalTimeHigherThan: Int
   podName: String
   operation: String
   ids: [String]
-  statusCode: Int
-  beginTime: String
-  endTime: String
 }
 
 type tracingMetrics {
