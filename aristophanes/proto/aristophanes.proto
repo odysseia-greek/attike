@@ -47,6 +47,17 @@ message Trace {
   TracingMetrics metrics = 5;
 }
 
+message TraceBody {
+  string method = 1; // GET POST PUT, etc.
+  string url = 2; // The URL called by a client
+  string host = 3; // The host that generated the trace
+  string operation = 4; // Action performed in the span
+  string root_query = 5; // Graphql query statement
+  // Reuse TraceCommon for common fields
+  TraceCommon common = 6;
+  TracingMetrics metrics = 7;
+}
+
 message TracingMetrics {
   string cpu_units = 1;
   string memory_units = 2;
@@ -80,7 +91,6 @@ service TraceService {
   rpc Chorus(stream ParabasisRequest) returns (TraceResponse);
 }
 
-
 message ParabasisRequest {
   string trace_id = 1;
   string parent_span_id = 2;
@@ -91,6 +101,7 @@ message ParabasisRequest {
     CloseTraceRequest close_trace = 6;
     SpanRequest span = 7;
     DatabaseSpanRequest database_span = 8;
+    TraceRequestWithBody trace_body = 9;
   }
 }
 
@@ -135,4 +146,12 @@ message TraceResponse {
 
 message HealthCheckResponse {
   bool status = 1;
+}
+
+message TraceRequestWithBody {
+  string method = 1; // GET POST PUT, etc.
+  string url = 2; // The URL called by a client
+  string host = 3; // The host that generated the trace
+  string operation = 4;
+  string root_query = 5; // Graphql query statement
 }

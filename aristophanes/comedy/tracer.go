@@ -9,7 +9,6 @@ import (
 	pbm "github.com/odysseia-greek/attike/sophokles/proto"
 	"io"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
@@ -84,6 +83,10 @@ func (t *TraceServiceImpl) Chorus(stream pb.TraceService_ChorusServer) error {
 		case *pb.ParabasisRequest_DatabaseSpan:
 			go t.safeExecute(func() {
 				t.DatabaseSpan(req, in.TraceId, in.ParentSpanId)
+			})
+		case *pb.ParabasisRequest_TraceBody:
+			go t.safeExecute(func() {
+				t.TraceWithBody(req, in.TraceId, in.ParentSpanId, in.SpanId)
 			})
 		default:
 			logging.Debug(fmt.Sprintf("Unhandled trace request type: %s", req))
@@ -261,6 +264,45 @@ func (t *TraceServiceImpl) Trace(in *pb.ParabasisRequest_Trace, traceID, ParentS
 	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
 }
 
+func (t *TraceServiceImpl) TraceWithBody(in *pb.ParabasisRequest_TraceBody, traceID, ParentSpanID, spanID string) {
+	traceData := &pb.TraceBody{
+		Method:    in.TraceBody.Method,
+		Url:       in.TraceBody.Url,
+		Host:      in.TraceBody.Host,
+		RootQuery: in.TraceBody.RootQuery,
+		Operation: in.TraceBody.Operation,
+		Common: &pb.TraceCommon{
+			SpanId:       spanID,
+			ParentSpanId: ParentSpanID,
+			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     TRACE,
+		},
+	}
+
+	if t.GatherMetrics && t.Metrics != nil {
+		metrics, err := t.gatherMetrics()
+		if err != nil {
+			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
+		} else {
+			traceData.Metrics = metrics
+		}
+	}
+	data, err := json.Marshal(&traceData)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
+
+	}
+	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
+		return
+	}
+
+	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
+}
+
 func (t *TraceServiceImpl) Span(in *pb.ParabasisRequest_Span, traceID, ParentSpanID string) {
 	spanID := GenerateSpanID()
 
@@ -355,7 +397,7 @@ func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
 }
 
 func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
-	maxRetries := 5
+	maxRetries := 3
 	retryDelay := 100 * time.Millisecond
 	var tenTriesError error
 
@@ -364,16 +406,6 @@ func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, dat
 
 		if err == nil {
 			return doc.ID, nil
-		}
-
-		var esErr ElasticsearchError
-		splitError := strings.SplitN(err.Error(), ":", 2)[1]
-		if parseErr := json.Unmarshal([]byte(splitError), &esErr); parseErr == nil {
-			if esErr.Error.Type == "document_missing_exception" && esErr.Status == 404 {
-				logging.Debug("Document missing, no use in retrying")
-				logging.Error(splitError)
-				return "", nil
-			}
 		}
 
 		if attempt < maxRetries {
