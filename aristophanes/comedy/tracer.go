@@ -9,7 +9,6 @@ import (
 	pbm "github.com/odysseia-greek/attike/sophokles/proto"
 	"io"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
@@ -398,7 +397,7 @@ func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
 }
 
 func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
-	maxRetries := 5
+	maxRetries := 3
 	retryDelay := 100 * time.Millisecond
 	var tenTriesError error
 
@@ -407,16 +406,6 @@ func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, dat
 
 		if err == nil {
 			return doc.ID, nil
-		}
-
-		var esErr ElasticsearchError
-		splitError := strings.SplitN(err.Error(), ":", 2)[1]
-		if parseErr := json.Unmarshal([]byte(splitError), &esErr); parseErr == nil {
-			if esErr.Error.Type == "document_missing_exception" && esErr.Status == 404 {
-				logging.Debug("Document missing, no use in retrying")
-				logging.Error(splitError)
-				return "", nil
-			}
 		}
 
 		if attempt < maxRetries {
