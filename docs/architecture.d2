@@ -1,0 +1,56 @@
+direction: right
+
+title: "Attike Observability — high-level flow"
+
+# ─────────────────────────────────────────────
+# Workload (application namespace)
+# ─────────────────────────────────────────────
+workload: "Workload Pod" {
+  aristophanes: "Aristophanes\n(trace sidecar / library)\n• emits traces\n• includes pod + ns + timestamp"
+}
+
+# ─────────────────────────────────────────────
+# Node-level collection
+# ─────────────────────────────────────────────
+node: "Kubernetes Node" {
+  sophokles: "Sophokles (DaemonSet)\n• scrapes kubelet stats\n  (direct or apiserver proxy)\n• raw pod/container metrics\n• timestamped samples"
+}
+
+# ─────────────────────────────────────────────
+# Messaging
+# ─────────────────────────────────────────────
+eupalinos: "Eupalinos (Queue)\n• raw metric samples stream"
+
+# ─────────────────────────────────────────────
+# Aggregation / rollups
+# ─────────────────────────────────────────────
+aiskhylos: "Aiskhylos (Deployment)\n• consumes raw samples\n• computes rollups (buckets)\n• avg / max / p95\n• per pod / per namespace"
+
+# ─────────────────────────────────────────────
+# Storage
+# ─────────────────────────────────────────────
+elastic_traces: "Elasticsearch\n(attike-traces)\n• traces + spans\n• pod / ns / ts"
+
+elastic_rollups: "Elasticsearch\n(attike-metrics-rollups)\n• pod rollups\n• namespace rollups\n• time buckets"
+
+# ─────────────────────────────────────────────
+# Query & UI
+# ─────────────────────────────────────────────
+euripides: "Euripides (GraphQL)\n• queries traces\n• queries rollups\n• correlates by pod+ns+ts\n  (e.g. ±10s window)\n• returns view models"
+
+polykleitos: "Polykleitos (Attike UI)\n• traces + metrics views\n• consumes Euripides\n• no join logic in UI"
+
+# Note: Pheidias is the overall Odysseia-Greek frontend shell; Polykleitos is the Attike-specific UI.
+
+# ─────────────────────────────────────────────
+# Flows
+# ─────────────────────────────────────────────
+workload.aristophanes -> elastic_traces: "write traces"
+
+node.sophokles -> eupalinos: "publish raw metrics"
+eupalinos -> aiskhylos: "consume"
+aiskhylos -> elastic_rollups: "write rollups"
+
+euripides -> elastic_traces: "query traces"
+euripides -> elastic_rollups: "query rollups"
+euripides -> polykleitos: "GraphQL responses"

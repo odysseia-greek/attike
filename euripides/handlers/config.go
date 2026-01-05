@@ -3,12 +3,15 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/odysseia-greek/agora/aristoteles"
 	"github.com/odysseia-greek/agora/aristoteles/models"
 	"github.com/odysseia-greek/agora/plato/config"
 	"github.com/odysseia-greek/agora/plato/logging"
-	"github.com/odysseia-greek/delphi/ptolemaios/diplomat"
-	pb "github.com/odysseia-greek/delphi/ptolemaios/proto"
+	"github.com/odysseia-greek/agora/plato/service"
+	"github.com/odysseia-greek/delphi/aristides/diplomat"
+	pb "github.com/odysseia-greek/delphi/aristides/proto"
+	"google.golang.org/grpc/metadata"
 	"os"
 	"strings"
 	"time"
@@ -35,19 +38,23 @@ import (
 //   - *Config: The created configuration containing the Elasticsearch client and index name.
 //   - error: An error if any occurred during the configuration creation process.
 func CreateNewConfig(env string) (*EuripidesHandler, error) {
+	logging.Debug("creating config")
+
 	tls := config.BoolFromEnv(config.EnvTlSKey)
 
 	var cfg models.Config
-	ambassador := diplomat.NewClientAmbassador()
-
+	ambassador, err := diplomat.NewClientAmbassador(diplomat.DEFAULTADDRESS)
 	healthy := ambassador.WaitForHealthyState()
 	if !healthy {
 		logging.Info("ambassador service not ready - restarting seems the only option")
 		os.Exit(1)
 	}
 
+	traceId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
+	md := metadata.New(map[string]string{service.HeaderKey: traceId})
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
 	vaultConfig, err := ambassador.GetSecret(ctx, &pb.VaultRequest{})
 	if err != nil {
 		logging.Error(err.Error())
