@@ -17,9 +17,9 @@ docs:
 		docker run --rm \
 			-v $$PWD/$$dir/docs:/out \
 			-v $$PWD/$$dir/proto:/protos \
-			localproto:latest --doc_opt=html,docs.html; \
+			pseudomuto/protoc-gen-doc --doc_opt=html,docs.html; \
 		docker run --rm \
 			-v $$PWD/$$dir/docs:/out \
 			-v $$PWD/$$dir/proto:/protos \
-			localproto:latest --doc_opt=markdown,docs.md; \
+			pseudomuto/protoc-gen-doc --doc_opt=markdown,docs.md; \
 	done

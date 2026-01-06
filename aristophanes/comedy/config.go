@@ -26,7 +26,7 @@ func NewTraceServiceImpl() (*TraceServiceImpl, error) {
 	commands := make(chan MapCommand, 100)
 
 	// Queue
-	eupalinosAddress := config.StringFromEnv(config.EnvEupalinosService, config.DefaultEupalinosService)
+	eupalinosAddress := config.StringFromEnv("EUPALINOS_TRACING_SERVICE", config.DefaultEupalinosService)
 	logging.Debug(fmt.Sprintf("creating new eupalinos client: %s", eupalinosAddress))
 	queue, err := stomion.NewEupalinosClient(eupalinosAddress)
 	if err != nil {

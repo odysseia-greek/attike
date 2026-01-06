@@ -79,7 +79,7 @@ func NewCollector() (*Collector, error) {
 		Timeout:   25 * time.Second,
 	}
 
-	eupalinosAddress := config.StringFromEnv(config.EnvEupalinosService, config.DefaultEupalinosService)
+	eupalinosAddress := config.StringFromEnv("EUPALINOS_TRACING_SERVICE", config.DefaultEupalinosService)
 	logging.Debug(fmt.Sprintf("creating new eupalinos client: %s", eupalinosAddress))
 	queue, err := stomion.NewEupalinosClient(eupalinosAddress)
 	if err != nil {
@@ -91,6 +91,8 @@ func NewCollector() (*Collector, error) {
 	if !queueHealthy {
 		logging.Debug("no queue that is healthy")
 	}
+
+	logging.Debug("queue healthy starting up")
 
 	channel := config.StringFromEnv(config.EnvChannel, "sophokles")
 

@@ -34,6 +34,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	logging.System("Starting up runner!")
+
 	if err := collector.Run(ctx); err != nil {
 		logging.Error(err.Error())
 		panic(err)
