@@ -2,37 +2,23 @@ package comedy
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/odysseia-greek/agora/plato/logging"
-	pb "github.com/odysseia-greek/attike/aristophanes/proto"
-	pbm "github.com/odysseia-greek/attike/sophokles/proto"
 	"io"
 	"runtime/debug"
 	"time"
+
+	pb "github.com/odysseia-greek/agora/eupalinos/proto"
+	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/agora/plato/service"
+	v1 "github.com/odysseia-greek/attike/aristophanes/gen/go/v1"
+	"google.golang.org/protobuf/proto"
 )
 
-const (
-	TRACE        string = "trace"
-	SPAN         string = "span"
-	TRACESTART   string = "trace_start"
-	TRACECLOSE   string = "trace_close"
-	DATABASESPAN string = "database_span"
-	ITEMS        string = "items"
-)
-
-type ElasticsearchError struct {
-	Error struct {
-		RootCause []struct {
-			Type string `json:"type"`
-		} `json:"root_cause"`
-		Type   string `json:"type"`
-		Reason string `json:"reason"`
-		Status int    `json:"status"`
-	} `json:"error"`
-	Status int `json:"status"`
-}
-
+// ManageStartTimeMap runs a single-goroutine registry that tracks trace start times.
+// It serializes all access to an internal map via commands, allowing concurrent
+// goroutines to safely set, retrieve, and delete start times without locks.
+// This is used by the tracing pipeline to correlate trace lifecycle events
+// (e.g. computing durations when spans or traces complete).
 func (t *TraceServiceImpl) ManageStartTimeMap() {
 	startTimeMap := make(map[string]time.Time)
 	for cmd := range t.commands {
@@ -48,374 +34,271 @@ func (t *TraceServiceImpl) ManageStartTimeMap() {
 	}
 }
 
-func (t *TraceServiceImpl) HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error) {
-	elasticHealth := t.Elastic.Health().Info()
-	return &pb.HealthCheckResponse{Status: elasticHealth.Healthy}, nil
+func (t *TraceServiceImpl) HealthCheck(ctx context.Context, start *v1.Empty) (*v1.HealthCheckResponse, error) {
+	return &v1.HealthCheckResponse{Status: true}, nil
 }
 
-func (t *TraceServiceImpl) Chorus(stream pb.TraceService_ChorusServer) error {
+func (t *TraceServiceImpl) Chorus(stream v1.TraceService_ChorusServer) error {
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
-			return stream.SendAndClose(&pb.TraceResponse{Ack: "Received"})
+			return stream.SendAndClose(&v1.ObserveResponse{Ack: "Received"})
 		}
 		if err != nil {
 			return err
 		}
 
-		switch req := in.RequestType.(type) {
-		case *pb.ParabasisRequest_StartTrace:
+		switch req := in.Kind.(type) {
+
+		case *v1.ObserveRequest_TraceStart:
 			go t.safeExecute(func() {
-				t.StartTrace(req, in.TraceId, in.ParentSpanId)
+				t.HandleTraceStart(req.TraceStart, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
-		case *pb.ParabasisRequest_Trace:
+
+		case *v1.ObserveRequest_TraceHop:
 			go t.safeExecute(func() {
-				t.Trace(req, in.TraceId, in.ParentSpanId, in.SpanId)
+				t.HandleTraceHop(req.TraceHop, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
-		case *pb.ParabasisRequest_CloseTrace:
+
+		case *v1.ObserveRequest_Graphql:
 			go t.safeExecute(func() {
-				t.CloseTrace(req, in.TraceId, in.ParentSpanId)
+				t.HandleGraphQL(req.Graphql, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
-		case *pb.ParabasisRequest_Span:
+
+		case *v1.ObserveRequest_Action:
 			go t.safeExecute(func() {
-				t.Span(req, in.TraceId, in.ParentSpanId)
+				t.HandleAction(req.Action, in.TraceId, in.ParentSpanId)
 			})
-		case *pb.ParabasisRequest_DatabaseSpan:
+
+		case *v1.ObserveRequest_DbSpan:
 			go t.safeExecute(func() {
-				t.DatabaseSpan(req, in.TraceId, in.ParentSpanId)
+				t.HandleDbSpan(req.DbSpan, in.TraceId, in.ParentSpanId)
 			})
-		case *pb.ParabasisRequest_TraceBody:
+
+		case *v1.ObserveRequest_TraceStop:
 			go t.safeExecute(func() {
-				t.TraceWithBody(req, in.TraceId, in.ParentSpanId, in.SpanId)
+				t.HandleTraceStop(req.TraceStop, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
+
 		default:
-			logging.Debug(fmt.Sprintf("Unhandled trace request type: %s", req))
+			logging.Debug("Unhandled observe request kind")
 		}
 	}
 }
 
-func (t *TraceServiceImpl) StartTrace(start *pb.ParabasisRequest_StartTrace, traceID, ParentSpanID string) {
+func (t *TraceServiceImpl) HandleTraceStart(start *v1.ObserveTraceStart, traceID, spanID, parentSpanID string) {
 	traceTime := time.Now().UTC()
+
 	t.commands <- MapCommand{
 		Action:  "set",
 		TraceID: traceID,
 		Time:    traceTime,
 	}
 
-	traceData := &pb.TraceStart{
-		Method:        start.StartTrace.Method,
-		Url:           start.StartTrace.Url,
-		Host:          start.StartTrace.Host,
-		RemoteAddress: start.StartTrace.RemoteAddress,
-		Operation:     start.StartTrace.Operation,
-		RootQuery:     start.StartTrace.RootQuery,
-		Common: &pb.TraceCommon{
-			SpanId:       ParentSpanID,
-			ParentSpanId: ParentSpanID,
-			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     TRACESTART,
-		},
-	}
-
-	if t.GatherMetrics && t.Metrics != nil {
-		metrics, err := t.gatherMetrics()
-		if err != nil {
-			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
-		} else {
-			traceData.Metrics = metrics
-		}
-	}
-
-	jsonData := map[string]interface{}{
-		"items":       []pb.TraceStart{*traceData},
-		"isActive":    true,
-		"timeStarted": traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
-		"timeEnded":   "1970-01-01T00:00:00.000",                   // Default null-like value
-		"totalTime":   0,
-	}
-
-	data, err := json.Marshal(&jsonData)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	doc, err := t.Elastic.Document().CreateWithId(t.Index, traceID, data)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error creating document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	logging.Debug(fmt.Sprintf("created trace with id: %s", doc.ID))
-
-}
-
-func (t *TraceServiceImpl) CloseTrace(close *pb.ParabasisRequest_CloseTrace, traceID, ParentSpanID string) {
-	traceTime := time.Now().UTC()
-
-	traceData := pb.TraceStop{
-		ResponseBody: close.CloseTrace.ResponseBody,
-
-		Common: &pb.TraceCommon{
-			ParentSpanId: ParentSpanID,
-			Timestamp:    traceTime.Format("2006-01-02'T'15:04:05.000"),
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     TRACECLOSE,
-		},
-	}
-
-	if t.GatherMetrics && t.Metrics != nil {
-		metrics, err := t.gatherMetrics()
-		if err != nil {
-			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
-		} else {
-			traceData.Metrics = metrics
-		}
-	}
-
-	data, err := json.Marshal(&traceData)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-
-	}
-	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
-	}
-
-	var totalTime int64
-	responseChan := make(chan MapResponse)
-	t.commands <- MapCommand{
-		Action:   "get",
-		TraceID:  traceID,
-		Response: responseChan,
-	}
-	response := <-responseChan
-
-	if !response.Found {
-		totalTime = 0
-	} else {
-		totalTime = traceTime.Sub(response.Time).Milliseconds()
-	}
-
-	closingTrace := map[string]interface{}{
-		"isActive":     false,
-		"timeEnded":    traceTime.Format("2006-01-02T15:04:05.000"), // Include milliseconds
-		"totalTime":    totalTime,
-		"responseCode": close.CloseTrace.ResponseCode,
-	}
-
-	update, err := json.Marshal(closingTrace)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-	}
-
-	doc, err := t.Elastic.Document().Update(t.Index, traceID, update)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	t.commands <- MapCommand{
-		Action:  "delete",
-		TraceID: doc.ID,
-	}
-
-	logging.Debug(fmt.Sprintf("closed trace with id: %s", docID))
-}
-
-func (t *TraceServiceImpl) Trace(in *pb.ParabasisRequest_Trace, traceID, ParentSpanID, spanID string) {
-	traceData := &pb.Trace{
-		Method: in.Trace.Method,
-		Url:    in.Trace.Url,
-		Host:   in.Trace.Host,
-		Common: &pb.TraceCommon{
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
 			SpanId:       spanID,
-			ParentSpanId: ParentSpanID,
-			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
+			ParentSpanId: parentSpanID, // or spanID if you want root parent == root
+			Timestamp:    traceTime.Format("2006-01-02T15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
-			ItemType:     TRACE,
+			ItemType:     v1.ItemType_TRACE_START,
+		},
+		Payload: &v1.AttikeEvent_TraceStart{
+			TraceStart: &v1.TraceStartEvent{
+				Method:        start.Method,
+				Url:           start.Url,
+				Host:          start.Host,
+				RemoteAddress: start.RemoteAddress,
+				RootQuery:     start.RootQuery,
+				Operation:     start.Operation,
+			},
 		},
 	}
 
-	if t.GatherMetrics && t.Metrics != nil {
-		metrics, err := t.gatherMetrics()
-		if err != nil {
-			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
-		} else {
-			traceData.Metrics = metrics
-		}
-	}
-	data, err := json.Marshal(&traceData)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-
-	}
-	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
-}
-
-func (t *TraceServiceImpl) TraceWithBody(in *pb.ParabasisRequest_TraceBody, traceID, ParentSpanID, spanID string) {
-	traceData := &pb.TraceBody{
-		Method:    in.TraceBody.Method,
-		Url:       in.TraceBody.Url,
-		Host:      in.TraceBody.Host,
-		RootQuery: in.TraceBody.RootQuery,
-		Operation: in.TraceBody.Operation,
-		Common: &pb.TraceCommon{
-			SpanId:       spanID,
-			ParentSpanId: ParentSpanID,
-			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     TRACE,
-		},
-	}
-
-	if t.GatherMetrics && t.Metrics != nil {
-		metrics, err := t.gatherMetrics()
-		if err != nil {
-			logging.Error(fmt.Sprintf("cannot set metrics because an error was returned: %s", err.Error()))
-		} else {
-			traceData.Metrics = metrics
-		}
-	}
-	data, err := json.Marshal(&traceData)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-
-	}
-	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	logging.Debug(fmt.Sprintf("added trace with id: %s", docID))
-}
-
-func (t *TraceServiceImpl) Span(in *pb.ParabasisRequest_Span, traceID, ParentSpanID string) {
-	spanID := GenerateSpanID()
-
-	span := &pb.Span{
-		Action: in.Span.Action,
-		Status: in.Span.Status,
-		Took:   in.Span.Took,
-		Common: &pb.TraceCommon{
-			ParentSpanId: ParentSpanID,
-			SpanId:       spanID,
-			Timestamp:    time.Now().UTC().Format("2006-01-02'T'15:04:05.000"),
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     SPAN,
-		},
-	}
-
-	data, err := json.Marshal(&span)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-
-	}
-	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	logging.Debug(fmt.Sprintf("added span with id: %s to trace: %s", spanID, docID))
-}
-
-func (t *TraceServiceImpl) DatabaseSpan(in *pb.ParabasisRequest_DatabaseSpan, traceID, ParentSpanID string) {
-	spanId := GenerateSpanID()
-
-	timeEndedStr := time.Now().UTC().Format("2006-01-02'T'15:04:05.000")
-	timeEnded, err := time.Parse("2006-01-02'T'15:04:05.000", timeEndedStr)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error parsing time for trace ID %s: %s", traceID, err))
-	}
-
-	// Convert TimeTook to a time.Duration based on MS
-	duration := time.Duration(in.DatabaseSpan.TimeTook) * time.Millisecond
-	timeStartedStr := timeEnded.Add(-duration).Format("2006-01-02'T'15:04:05.000")
-
-	dbSpan := &pb.DatabaseSpan{
-		Query:        in.DatabaseSpan.Query,
-		TimeStarted:  timeStartedStr,
-		TimeFinished: timeEndedStr,
-		Hits:         in.DatabaseSpan.Hits,
-		Took:         fmt.Sprintf("%vms", in.DatabaseSpan.TimeTook),
-		Common: &pb.TraceCommon{
-			SpanId:       spanId,
-			ParentSpanId: ParentSpanID,
-			Timestamp:    timeEndedStr,
-			PodName:      t.PodName,
-			Namespace:    t.Namespace,
-			ItemType:     DATABASESPAN,
-		},
-	}
-
-	data, err := json.Marshal(dbSpan)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error marshalling document for trace ID %s: %s", traceID, err))
-	}
-	docID, err := t.UpdateDocumentWithRetry(traceID, ITEMS, data)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Error updating document for trace ID %s: %s", traceID, err))
-		return
-	}
-
-	logging.Debug(fmt.Sprintf("added database span to id: %s", docID))
-}
-
-func (t *TraceServiceImpl) gatherMetrics() (*pb.TracingMetrics, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
 	defer cancel()
 
-	metrics, err := t.Metrics.FetchMetrics(ctx, &pbm.Empty{})
+	err := t.enqueueTask(ctx, ev)
 	if err != nil {
-		return nil, err
+		logging.Error(err.Error())
 	}
-
-	return &pb.TracingMetrics{
-		CpuUnits:            metrics.CpuUnits,
-		MemoryUnits:         metrics.MemoryUnits,
-		Name:                metrics.Pod.Name,
-		CpuRaw:              metrics.Pod.CpuRaw,
-		MemoryRaw:           metrics.Pod.MemoryRaw,
-		CpuHumanReadable:    metrics.Pod.CpuHumanReadable,
-		MemoryHumanReadable: metrics.Pod.MemoryHumanReadable,
-	}, nil
 }
 
-func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
-	maxRetries := 3
-	retryDelay := 100 * time.Millisecond
-	var tenTriesError error
+func (t *TraceServiceImpl) HandleTraceStop(close *v1.ObserveTraceStop, traceID, spanID, parentSpanID string) {
+	traceTime := time.Now().UTC()
 
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		doc, err := t.Elastic.Document().AddItemToDocument(t.Index, traceID, string(data), itemName)
+	// get start time from your registry
+	responseChan := make(chan MapResponse, 1)
+	t.commands <- MapCommand{Action: "get", TraceID: traceID, Response: responseChan}
+	resp := <-responseChan
 
-		if err == nil {
-			return doc.ID, nil
-		}
-
-		if attempt < maxRetries {
-			tenTriesError = err
-			// Sleep before the next retry
-			time.Sleep(retryDelay)
-		}
+	timeStarted := "1970-01-01T00:00:00.000"
+	totalTime := int64(0)
+	if resp.Found {
+		timeStarted = resp.Time.UTC().Format("2006-01-02T15:04:05.000")
+		totalTime = traceTime.Sub(resp.Time).Milliseconds()
 	}
 
-	return "", fmt.Errorf("error updating document for trace ID %s: %s", traceID, tenTriesError.Error())
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
+			SpanId:       spanID,
+			ParentSpanId: parentSpanID, // or spanID if you want root parent == root
+			Timestamp:    traceTime.Format("2006-01-02T15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     v1.ItemType_TRACE_STOP,
+		},
+		Payload: &v1.AttikeEvent_TraceStop{
+			TraceStop: &v1.TraceStopEvent{
+				ResponseBody: close.ResponseBody,
+				ResponseCode: close.ResponseCode,
+				TimeStarted:  timeStarted,
+				TimeEnded:    traceTime.Format("2006-01-02T15:04:05.000"),
+				TotalTimeMs:  totalTime,
+				IsClosed:     true,
+			},
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
+	defer cancel()
+
+	err := t.enqueueTask(ctx, ev)
+	if err != nil {
+		logging.Error(err.Error())
+	}
+
+	t.commands <- MapCommand{Action: "delete", TraceID: traceID}
+}
+
+func (t *TraceServiceImpl) HandleTraceHop(in *v1.ObserveTraceHop, traceID, ParentSpanID, spanID string) {
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
+			SpanId:       spanID,
+			ParentSpanId: ParentSpanID, // or spanID if you want root parent == root
+			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     v1.ItemType_TRACE_HOP,
+		},
+		Payload: &v1.AttikeEvent_TraceHop{
+			TraceHop: &v1.TraceHopEvent{
+				Method:       in.Method,
+				Url:          in.Url,
+				Host:         in.Host,
+				ResponseCode: in.ResponseCode,
+			},
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
+	defer cancel()
+
+	err := t.enqueueTask(ctx, ev)
+	if err != nil {
+		logging.Error(err.Error())
+		return
+	}
+}
+
+func (t *TraceServiceImpl) HandleAction(in *v1.ObserveAction, traceID, ParentSpanID string) {
+	spanID := GenerateSpanID()
+
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
+			SpanId:       spanID,
+			ParentSpanId: ParentSpanID, // or spanID if you want root parent == root
+			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     v1.ItemType_ACTION,
+		},
+		Payload: &v1.AttikeEvent_Action{
+			Action: &v1.ActionEvent{
+				Action: in.Action,
+				Status: in.Status,
+				TookMs: in.TookMs,
+			},
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
+	defer cancel()
+
+	err := t.enqueueTask(ctx, ev)
+	if err != nil {
+		logging.Error(err.Error())
+		return
+	}
+}
+
+func (t *TraceServiceImpl) HandleDbSpan(in *v1.ObserveDbSpan, traceID, ParentSpanID string) {
+	spanID := GenerateSpanID()
+
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
+			SpanId:       spanID,
+			ParentSpanId: ParentSpanID, // or spanID if you want root parent == root
+			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     v1.ItemType_DB_SPAN,
+		},
+		Payload: &v1.AttikeEvent_DbSpan{
+			DbSpan: &v1.DatabaseSpanEvent{
+				Action: in.Action,
+				Query:  in.Query,
+				Hits:   in.Hits,
+				TookMs: in.TookMs,
+				Target: in.Target,
+				Index:  in.Index,
+			},
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
+	defer cancel()
+
+	err := t.enqueueTask(ctx, ev)
+	if err != nil {
+		logging.Error(err.Error())
+		return
+	}
+}
+
+func (t *TraceServiceImpl) HandleGraphQL(in *v1.ObserveGraphQL, traceID, spanID, ParentSpanID string) {
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
+			SpanId:       spanID,
+			ParentSpanId: ParentSpanID, // or spanID if you want root parent == root
+			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     v1.ItemType_GRAPHQL,
+		},
+		Payload: &v1.AttikeEvent_Graphql{
+			Graphql: &v1.GraphQLEvent{
+				Operation: in.Operation,
+				RootQuery: in.RootQuery,
+			},
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
+	defer cancel()
+
+	err := t.enqueueTask(ctx, ev)
+	if err != nil {
+		logging.Error(err.Error())
+		return
+	}
 }
 
 func (t *TraceServiceImpl) safeExecute(action func()) {
@@ -425,4 +308,28 @@ func (t *TraceServiceImpl) safeExecute(action func()) {
 		}
 	}()
 	action()
+}
+
+// EnqueueTask sends a task to the Eupalinos queue
+func (t *TraceServiceImpl) enqueueTask(ctx context.Context, ev *v1.AttikeEvent) error {
+	data, err := proto.Marshal(ev)
+	if err != nil {
+		return fmt.Errorf("marshal trace %s trace_id=%s: %v", ev.Common.ItemType.String(), ev.Common.TraceId, err)
+	}
+
+	ctx = context.WithValue(ctx, service.HeaderKey, ev.Common.TraceId)
+
+	message := &pb.Epistello{
+		Data:    string(data),
+		Channel: t.Channel,
+	}
+
+	queue, err := t.Eupalinos.EnqueueMessage(ctx, message)
+	if err != nil {
+		return fmt.Errorf("Error creating queueing for trace ID %s: %s", ev.Common.TraceId, err)
+	}
+
+	logging.Debug(fmt.Sprintf("queued %s with id: %s", ev.Common.ItemType.String(), queue.Id))
+
+	return nil
 }

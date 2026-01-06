@@ -3,20 +3,21 @@ package comedy
 import (
 	"context"
 	"fmt"
-	"github.com/odysseia-greek/agora/plato/config"
-	pb "github.com/odysseia-greek/attike/aristophanes/proto"
 	"strings"
+
+	"github.com/odysseia-greek/agora/plato/config"
+	v1 "github.com/odysseia-greek/attike/aristophanes/gen/go/v1"
 )
 
-func TraceFromCtx(ctx context.Context) *pb.TraceBare {
+func TraceFromCtx(ctx context.Context) *v1.TraceBare {
 	requestId := ctx.Value(config.HeaderKey).(string)
 	return traceFromString(requestId)
 }
 
-func traceFromString(requestId string) *pb.TraceBare {
+func traceFromString(requestId string) *v1.TraceBare {
 	splitID := strings.Split(requestId, "+")
 
-	trace := &pb.TraceBare{}
+	trace := &v1.TraceBare{}
 
 	if len(splitID) >= 3 {
 		trace.Save = splitID[2] == "1"
@@ -32,7 +33,7 @@ func traceFromString(requestId string) *pb.TraceBare {
 	return trace
 }
 
-func CreateCombinedId(trace *pb.TraceBare) string {
+func CreateCombinedId(trace *v1.TraceBare) string {
 	saveTrace := 1
 	if !trace.Save {
 		saveTrace = 0

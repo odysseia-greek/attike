@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/odysseia-greek/agora/plato/logging"
-	"github.com/odysseia-greek/attike/aristophanes/comedy"
-	pb "github.com/odysseia-greek/attike/aristophanes/proto"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/attike/aristophanes/comedy"
+	v1 "github.com/odysseia-greek/attike/aristophanes/gen/go/v1"
+	"google.golang.org/grpc"
 )
 
 const standardPort = ":50052"
@@ -62,7 +63,7 @@ func main() {
 
 	server = grpc.NewServer()
 
-	pb.RegisterTraceServiceServer(server, traceClient)
+	v1.RegisterTraceServiceServer(server, traceClient)
 
 	go func() {
 		logging.System(fmt.Sprintf("Server listening on %s", port))

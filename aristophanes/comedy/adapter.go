@@ -3,17 +3,19 @@ package comedy
 import (
 	"context"
 	"fmt"
+
 	"github.com/odysseia-greek/agora/plato/config"
 	"github.com/odysseia-greek/agora/plato/logging"
 	"github.com/odysseia-greek/agora/plato/middleware"
-	pb "github.com/odysseia-greek/attike/aristophanes/proto"
+	v1 "github.com/odysseia-greek/attike/aristophanes/gen/go/v1"
+
 	"net/http"
 	"time"
 )
 
 type Adapter func(http.HandlerFunc) http.HandlerFunc
 
-func Trace(tracer pb.TraceService_ChorusClient) Adapter {
+func Trace(tracer v1.TraceService_ChorusClient) Adapter {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			requestId := r.Header.Get(config.HeaderKey)
@@ -27,12 +29,12 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 				ctx := context.WithValue(r.Context(), config.DefaultTracingName, combinedId)
 
 				go func() {
-					parabasis := &pb.ParabasisRequest{
+					parabasis := &v1.ObserveRequest{
 						TraceId:      trace.TraceId,
-						ParentSpanId: trace.SpanId,
 						SpanId:       newSpan,
-						RequestType: &pb.ParabasisRequest_Trace{
-							Trace: &pb.TraceRequest{
+						ParentSpanId: trace.SpanId,
+						Kind: &v1.ObserveRequest_TraceHop{
+							TraceHop: &v1.ObserveTraceHop{
 								Method: r.Method,
 								Url:    r.URL.RequestURI(),
 								Host:   r.Host,
@@ -55,7 +57,7 @@ func Trace(tracer pb.TraceService_ChorusClient) Adapter {
 	}
 }
 
-func TraceWithLogAndSpan(tracer pb.TraceService_ChorusClient) Adapter {
+func TraceWithLogAndSpan(tracer v1.TraceService_ChorusClient) Adapter {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
@@ -72,12 +74,12 @@ func TraceWithLogAndSpan(tracer pb.TraceService_ChorusClient) Adapter {
 				ctx := context.WithValue(r.Context(), config.DefaultTracingName, combinedId)
 
 				go func() {
-					parabasis := &pb.ParabasisRequest{
+					parabasis := &v1.ObserveRequest{
 						TraceId:      trace.TraceId,
-						ParentSpanId: originalSpanId,
 						SpanId:       newSpan,
-						RequestType: &pb.ParabasisRequest_Trace{
-							Trace: &pb.TraceRequest{
+						ParentSpanId: originalSpanId,
+						Kind: &v1.ObserveRequest_TraceHop{
+							TraceHop: &v1.ObserveTraceHop{
 								Method: r.Method,
 								Url:    r.URL.RequestURI(),
 								Host:   r.Host,
@@ -108,15 +110,15 @@ func TraceWithLogAndSpan(tracer pb.TraceService_ChorusClient) Adapter {
 					statusCode = http.StatusOK
 				}
 				go func() {
-					parabasis := &pb.ParabasisRequest{
+					parabasis := &v1.ObserveRequest{
 						TraceId:      trace.TraceId,
-						ParentSpanId: newSpan,
 						SpanId:       GenerateSpanID(),
-						RequestType: &pb.ParabasisRequest_Span{
-							Span: &pb.SpanRequest{
+						ParentSpanId: newSpan,
+						Kind: &v1.ObserveRequest_Action{
+							Action: &v1.ObserveAction{
 								Action: "CloseSpan",
-								Took:   fmt.Sprintf("%v", duration),
 								Status: fmt.Sprintf("status code: %d", statusCode),
+								TookMs: duration.Milliseconds(),
 							},
 						},
 					}

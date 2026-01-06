@@ -1,0 +1,8 @@
+# attike/buf.yaml
+version: v2
+modules:
+  - path: aristophanes/proto
+lint:
+  use: [DEFAULT]
+breaking:
+  use: [FILE]

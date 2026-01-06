@@ -219,3 +219,25 @@ func createSummary(metrics *ClusterMetrics) {
 	}
 	logging.Debug(topByPodMemory)
 }
+
+func (t *TraceServiceImpl) UpdateDocumentWithRetry(traceID, itemName string, data []byte) (string, error) {
+	maxRetries := 3
+	retryDelay := 100 * time.Millisecond
+	var tenTriesError error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		doc, err := t.Elastic.Document().AddItemToDocument(t.Index, traceID, string(data), itemName)
+
+		if err == nil {
+			return doc.ID, nil
+		}
+
+		if attempt < maxRetries {
+			tenTriesError = err
+			// Sleep before the next retry
+			time.Sleep(retryDelay)
+		}
+	}
+
+	return "", fmt.Errorf("error updating document for trace ID %s: %s", traceID, tenTriesError.Error())
+}

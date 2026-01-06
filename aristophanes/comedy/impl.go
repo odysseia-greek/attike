@@ -3,17 +3,17 @@ package comedy
 import (
 	"context"
 	"fmt"
-	"github.com/odysseia-greek/agora/aristoteles"
-	pb "github.com/odysseia-greek/attike/aristophanes/proto"
-	sophokles "github.com/odysseia-greek/attike/sophokles/tragedy"
+	"time"
+
+	"github.com/odysseia-greek/agora/eupalinos/stomion"
+	v1 "github.com/odysseia-greek/attike/aristophanes/gen/go/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"time"
 )
 
 type TraceService interface {
-	HealthCheck(ctx context.Context, start *pb.Empty) (*pb.HealthCheckResponse, error)
-	Chorus(ctx context.Context) (pb.TraceService_ChorusClient, error)
+	HealthCheck(ctx context.Context, start *v1.Empty) (*v1.HealthCheckResponse, error)
+	Chorus(ctx context.Context) (v1.TraceService_ChorusClient, error)
 	WaitForHealthyState() bool
 }
 
@@ -30,14 +30,14 @@ type MapResponse struct {
 }
 
 type TraceServiceImpl struct {
-	PodName       string
-	Namespace     string
-	Index         string
-	Elastic       aristoteles.Client
-	Metrics       *sophokles.ClientMetrics
-	GatherMetrics bool
-	commands      chan MapCommand
-	pb.UnimplementedTraceServiceServer
+	PodName   string
+	Namespace string
+	commands  chan MapCommand
+	Eupalinos *stomion.QueueClient
+	Channel   string
+	baseCtx   context.Context
+	cancel    context.CancelFunc
+	v1.UnimplementedTraceServiceServer
 }
 
 type TraceServiceClient struct {
@@ -45,7 +45,7 @@ type TraceServiceClient struct {
 }
 
 type ClientTracer struct {
-	tracer pb.TraceServiceClient
+	tracer v1.TraceServiceClient
 }
 
 func NewClientTracer(serviceAddress string) (*ClientTracer, error) {
@@ -57,7 +57,7 @@ func NewClientTracer(serviceAddress string) (*ClientTracer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to tracing service: %w", err)
 	}
-	client := pb.NewTraceServiceClient(conn)
+	client := v1.NewTraceServiceClient(conn)
 	return &ClientTracer{tracer: client}, nil
 }
 
@@ -67,7 +67,7 @@ func (c *ClientTracer) WaitForHealthyState() bool {
 	endTime := time.Now().Add(timeout)
 
 	for time.Now().Before(endTime) {
-		response, err := c.HealthCheck(context.Background(), &pb.Empty{})
+		response, err := c.HealthCheck(context.Background(), &v1.Empty{})
 		if err == nil && response.Status {
 			return true
 		}
@@ -78,10 +78,10 @@ func (c *ClientTracer) WaitForHealthyState() bool {
 	return false
 }
 
-func (c *ClientTracer) HealthCheck(ctx context.Context, request *pb.Empty) (*pb.HealthCheckResponse, error) {
+func (c *ClientTracer) HealthCheck(ctx context.Context, request *v1.Empty) (*v1.HealthCheckResponse, error) {
 	return c.tracer.HealthCheck(ctx, request)
 }
 
-func (c *ClientTracer) Chorus(ctx context.Context) (pb.TraceService_ChorusClient, error) {
+func (c *ClientTracer) Chorus(ctx context.Context) (v1.TraceService_ChorusClient, error) {
 	return c.tracer.Chorus(ctx)
 }

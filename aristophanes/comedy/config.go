@@ -1,12 +1,13 @@
 package comedy
 
 import (
-	"github.com/odysseia-greek/agora/aristoteles"
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/odysseia-greek/agora/eupalinos/stomion"
 	"github.com/odysseia-greek/agora/plato/config"
 	"github.com/odysseia-greek/agora/plato/logging"
-	sophokles "github.com/odysseia-greek/attike/sophokles/tragedy"
-	"os"
-	"strconv"
 )
 
 const (
@@ -20,51 +21,34 @@ func NewTraceServiceImpl() (*TraceServiceImpl, error) {
 		podName = "aristophanes-0"
 	}
 	// Get the Namespace from the environment
-	namespace := os.Getenv("NAMESPACE")
-	if namespace == "" {
-		namespace = "odysseia"
-	}
+	namespace := config.StringFromEnv(config.EnvNamespace, "attike")
 
-	tls := config.BoolFromEnv(config.EnvTlSKey)
-	cfg, err := aristoteles.ElasticConfig(tls)
+	commands := make(chan MapCommand, 100)
 
-	elastic, err := aristoteles.NewClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	err = aristoteles.HealthCheck(elastic)
-	if err != nil {
-		return nil, err
-	}
-
-	index := config.StringFromEnv(config.EnvIndex, config.TracingElasticIndex)
-
-	gatherMetricsString := os.Getenv("GATHER_METRICS")
-	gatherMetrics, err := strconv.ParseBool(gatherMetricsString)
+	// Queue
+	eupalinosAddress := config.StringFromEnv(config.EnvEupalinosService, config.DefaultEupalinosService)
+	logging.Debug(fmt.Sprintf("creating new eupalinos client: %s", eupalinosAddress))
+	queue, err := stomion.NewEupalinosClient(eupalinosAddress)
 	if err != nil {
 		logging.Error(err.Error())
 	}
 
-	var metrics *sophokles.ClientMetrics
-	if gatherMetrics {
-		metrics = sophokles.NewMetricsClient()
-		healthy := metrics.WaitForHealthyState()
-		if !healthy {
-			logging.Info("metrics service not ready - leaving empty")
-			gatherMetrics = false
-		}
+	logging.Debug("waiting for queue to be ready")
+	queueHealthy := queue.WaitForHealthyState()
+	if !queueHealthy {
+		logging.Debug("no queue that is healthy")
 	}
 
-	commands := make(chan MapCommand, 100)
+	channel := config.StringFromEnv(config.EnvChannel, "aristophanes")
+	ctx, cancel := context.WithCancel(context.Background())
 
 	return &TraceServiceImpl{
-		PodName:       podName,
-		Namespace:     namespace,
-		Elastic:       elastic,
-		Index:         index,
-		Metrics:       metrics,
-		commands:      commands,
-		GatherMetrics: gatherMetrics,
+		PodName:   podName,
+		Namespace: namespace,
+		commands:  commands,
+		Eupalinos: queue,
+		Channel:   channel,
+		baseCtx:   ctx,
+		cancel:    cancel,
 	}, nil
 }

@@ -1,0 +1,181 @@
+syntax = "proto3";
+option go_package = "github.com/odysseia-greek/attike/aristophanes/gen/go/v1;aristophanesv1";
+
+package aristophanes.v1;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ingress: app/services → Aristophanes (instrumentation stream)
+// ─────────────────────────────────────────────────────────────────────────────
+
+service TraceService {
+  rpc HealthCheck(Empty) returns (HealthCheckResponse);
+  rpc Chorus(stream ObserveRequest) returns (ObserveResponse);
+}
+
+// Helper for middleware adapater
+message TraceBare {
+  string trace_id = 1;
+  string span_id = 2;
+  bool save = 3;
+}
+
+message ObserveRequest {
+  string trace_id = 1;
+  string span_id = 2;         // unique id for this event
+  string parent_span_id = 3;  // used to form a tree (optional)
+
+  oneof kind {
+    ObserveTraceStart   trace_start   = 10;
+    ObserveTraceHop     trace_hop     = 11;
+    ObserveGraphQL      graphql       = 12;
+    ObserveAction       action        = 13;
+    ObserveDbSpan       db_span       = 14;
+    ObserveTraceStop    trace_stop    = 15;
+  }
+}
+
+message ObserveTraceStart {
+  // Usually the inbound request that created the trace
+  string method = 1;
+  string url = 2;
+  string host = 3;
+  string remote_address = 4;
+  string root_query = 5;
+  string operation = 6;
+}
+
+message ObserveTraceHop {
+  // A recorded step during the trace (service-to-service call, internal hop, etc.)
+  string method = 1;          // "GET", "POST", "grpc", "internal"
+  string url = 2;             // path or URL (for grpc you can use "/pkg.Service/Method")
+  string host = 3;            // destination service/host
+  int32 response_code = 4;    // 0 if unknown / not applicable
+  int64 took_ms = 5;          // duration of this hop
+}
+
+message ObserveGraphQL {
+  // GraphQL-specific context. Emit once near the start (or whenever known).
+  string operation = 1;       // GraphQL operation name
+  string root_query = 2;      // GraphQL query string (careful with size)
+}
+
+message ObserveAction {
+  // A single in-service action
+  string action = 1;
+  string status = 2;
+  int64 took_ms = 3;
+}
+
+message ObserveDbSpan {
+  // A database/search query (Elastic etc.)
+  string action = 1;          // e.g. "elastic.search"
+  string query = 2;           // query body/string (careful with size)
+  int64 hits = 3;
+  int64 took_ms = 4;
+  string target = 5;          // "elasticsearch", "cassandra", ...
+  string index = 6;           // optional index/table
+}
+
+message ObserveTraceStop {
+  string response_body = 1;
+  int32 response_code = 2;
+}
+
+message ObserveResponse {
+  string ack = 1;
+}
+
+message Empty {}
+message HealthCheckResponse { bool status = 1; }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Egress: Aristophanes → Eupalinos (canonical queued event envelope)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ItemType {
+  ITEM_TYPE_UNSPECIFIED = 0;
+  TRACE_START = 1;
+  TRACE_HOP   = 2;
+  GRAPHQL     = 3;
+  ACTION      = 4;
+  DB_SPAN     = 5;
+  TRACE_STOP  = 6;
+}
+
+message TraceCommon {
+  string trace_id = 1;
+  string span_id = 2;
+  string parent_span_id = 3;
+
+  // UTC "2006-01-02T15:04:05.000"
+  string timestamp = 4;
+
+  string pod_name = 5;
+  string namespace = 6;
+
+  ItemType item_type = 7;
+}
+
+message AttikeEvent {
+  TraceCommon common = 1;
+
+  oneof payload {
+    TraceStartEvent   trace_start = 2;
+    TraceHopEvent     trace_hop   = 3;
+    GraphQLEvent      graphql     = 4;
+    ActionEvent       action      = 5;
+    DatabaseSpanEvent db_span     = 6;
+    TraceStopEvent    trace_stop  = 7;
+  }
+}
+
+// --- Payloads (no common inside) ---
+
+message TraceStartEvent {
+  string method = 1;
+  string url = 2;
+  string host = 3;
+  string remote_address = 4;
+  string root_query = 5;
+  string operation = 6;
+}
+
+message TraceHopEvent {
+  string method = 1;
+  string url = 2;
+  string host = 3;
+  int32 response_code = 4;
+  int64 took_ms = 5;
+}
+
+message GraphQLEvent {
+  string operation = 1;
+  string root_query = 2;
+}
+
+message ActionEvent {
+  string action = 1;
+  string status = 2;
+  int64 took_ms = 3;
+}
+
+message DatabaseSpanEvent {
+  string action = 1;
+  string query = 2;
+  int64 hits = 3;
+  int64 took_ms = 4;
+  string target = 5;
+  string index = 6;
+}
+
+message TraceStopEvent {
+  string response_body = 1;
+  int32 response_code = 2;
+
+  // Finalization fields so Aiskhylos doesn't need extra state
+  string time_started = 3;
+  string time_ended   = 4;
+  int64 total_time_ms = 5;
+  bool is_closed      = 6;
+}
