@@ -39,7 +39,10 @@ func NewTraceServiceImpl() (*TraceServiceImpl, error) {
 		logging.Debug("no queue that is healthy")
 	}
 
-	channel := config.StringFromEnv(config.EnvChannel, "aristophanes")
+	channel := "aristophanes"
+
+	logging.Debug(fmt.Sprintf("starting up with channel: %s", channel))
+	logging.Debug(fmt.Sprintf("starting up with address: %s", eupalinosAddress))
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &TraceServiceImpl{

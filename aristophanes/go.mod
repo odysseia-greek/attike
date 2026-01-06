@@ -3,7 +3,7 @@ module github.com/odysseia-greek/attike/aristophanes
 go 1.25.5
 
 require (
-	github.com/odysseia-greek/agora/eupalinos v0.2.5
+	github.com/odysseia-greek/agora/eupalinos v0.2.7
 	github.com/odysseia-greek/agora/plato v0.2.12
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
