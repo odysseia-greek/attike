@@ -30,7 +30,7 @@ func (t *TraceServiceImpl) enqueueTask(ctx context.Context, ev *v1.AttikeEvent) 
 		return fmt.Errorf("Error creating queueing for trace ID %s: %s", ev.Common.TraceId, err)
 	}
 
-	logging.Debug(fmt.Sprintf("queued %s with id: %s", ev.Common.ItemType.String(), queue.Id))
+	logging.Debug(fmt.Sprintf("queued %s with id: %s and traceid: %s", ev.Common.ItemType.String(), queue.Id, ev.Common.TraceId))
 
 	return nil
 }

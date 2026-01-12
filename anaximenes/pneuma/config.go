@@ -3,6 +3,7 @@ package pneuma
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -68,7 +69,13 @@ func CreateNewConfig() (*AnaximenesHandler, error) {
 		maxAge = defaultMaxAge
 	}
 
-	indices := []string{config.TracingElasticIndex, config.MetricsElasticIndex}
+	rootIndex := config.StringFromEnv(config.EnvIndex, "")
+	splitIndex := strings.Split(rootIndex, ";")
+	indices := splitIndex
+
+	for _, index := range indices {
+		logging.Debug("index: " + index)
+	}
 
 	policyNameTrace := config.StringFromEnv(config.HotPolicyEnv, "hot_30d")
 	policyNameMetrics := config.StringFromEnv("METRICS_POLICY_NAME", "hot_3d")

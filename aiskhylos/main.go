@@ -1,11 +1,14 @@
 package main
 
 import (
-	"github.com/odysseia-greek/agora/plato/logging"
-	"github.com/odysseia-greek/attike/aiskhylos/tragedy"
+	"context"
 	"log"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
+
+	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/attike/aiskhylos/tragedy"
 )
 
 func main() {
@@ -25,23 +28,16 @@ func main() {
 	logging.System("He who learns must suffer.")
 	logging.System("Starting up...")
 
-	env := os.Getenv("ENV")
-
-	metricsClient, err := tragedy.NewMetricGathererImpl(env)
+	metricsClient, err := tragedy.NewGatherer()
 	if err != nil {
-		log.Fatalf("error creating MetricsServiceClient: %v", err)
+		log.Fatalf("error creating Gatherer: %v", err)
 	}
 
-	ticker := time.NewTicker(metricsClient.Interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			err := metricsClient.GatherMetricsOnTimerFull()
-			if err != nil {
-				logging.Error(err.Error())
-			}
-		}
-	}
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+	metricsClient.Start(ctx)
 }
