@@ -64,17 +64,22 @@ func (t *TraceServiceImpl) Chorus(stream v1.TraceService_ChorusServer) error {
 
 		case *v1.ObserveRequest_Action:
 			go t.safeExecute(func() {
-				t.HandleAction(req.Action, in.TraceId, in.ParentSpanId)
+				t.HandleAction(req.Action, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
 
 		case *v1.ObserveRequest_DbSpan:
 			go t.safeExecute(func() {
-				t.HandleDbSpan(req.DbSpan, in.TraceId, in.ParentSpanId)
+				t.HandleDbSpan(req.DbSpan, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
 
 		case *v1.ObserveRequest_TraceStop:
 			go t.safeExecute(func() {
 				t.HandleTraceStop(req.TraceStop, in.TraceId, in.SpanId, in.ParentSpanId)
+			})
+
+		case *v1.ObserveRequest_TraceHopStop:
+			go t.safeExecute(func() {
+				t.HandleTraceStopHop(req.TraceHopStop, in.TraceId, in.SpanId, in.ParentSpanId)
 			})
 
 		default:
@@ -201,9 +206,36 @@ func (t *TraceServiceImpl) HandleTraceHop(in *v1.ObserveTraceHop, traceID, Paren
 	}
 }
 
-func (t *TraceServiceImpl) HandleAction(in *v1.ObserveAction, traceID, ParentSpanID string) {
-	spanID := GenerateSpanID()
+func (t *TraceServiceImpl) HandleTraceStopHop(close *v1.ObserveTraceHopStop, traceID, spanID, parentSpanID string) {
+	ev := &v1.AttikeEvent{
+		Common: &v1.TraceCommon{
+			TraceId:      traceID,
+			SpanId:       spanID,
+			ParentSpanId: parentSpanID, // or spanID if you want root parent == root
+			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
+			PodName:      t.PodName,
+			Namespace:    t.Namespace,
+			ItemType:     v1.ItemType_TRACE_STOP,
+		},
+		Payload: &v1.AttikeEvent_TraceHopStop{
+			TraceHopStop: &v1.TraceHopStopEvent{
+				ResponseCode: close.ResponseCode,
+				TookMs:       close.TookMs,
+			},
+		},
+	}
 
+	ctx, cancel := context.WithTimeout(t.baseCtx, 3*time.Second)
+	defer cancel()
+
+	err := t.enqueueTask(ctx, ev)
+	if err != nil {
+		logging.Error(err.Error())
+		return
+	}
+}
+
+func (t *TraceServiceImpl) HandleAction(in *v1.ObserveAction, traceID, spanID, ParentSpanID string) {
 	ev := &v1.AttikeEvent{
 		Common: &v1.TraceCommon{
 			TraceId:      traceID,
@@ -233,9 +265,7 @@ func (t *TraceServiceImpl) HandleAction(in *v1.ObserveAction, traceID, ParentSpa
 	}
 }
 
-func (t *TraceServiceImpl) HandleDbSpan(in *v1.ObserveDbSpan, traceID, ParentSpanID string) {
-	spanID := GenerateSpanID()
-
+func (t *TraceServiceImpl) HandleDbSpan(in *v1.ObserveDbSpan, traceID, spanID, ParentSpanID string) {
 	ev := &v1.AttikeEvent{
 		Common: &v1.TraceCommon{
 			TraceId:      traceID,

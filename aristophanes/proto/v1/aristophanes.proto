@@ -131,6 +131,7 @@ message AttikeEvent {
     ActionEvent       action      = 5;
     DatabaseSpanEvent db_span     = 6;
     TraceStopEvent    trace_stop  = 7;
+    TraceHopStopEvent trace_hop_stop = 8;
   }
 }
 
@@ -171,6 +172,11 @@ message DatabaseSpanEvent {
   int64 took_ms = 4;
   string target = 5;
   string index = 6;
+}
+
+message TraceHopStopEvent {
+  int32 response_code = 1;
+  int64 took_ms = 2;
 }
 
 message TraceStopEvent {
