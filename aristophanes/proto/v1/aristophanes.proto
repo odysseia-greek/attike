@@ -27,10 +27,11 @@ message ObserveRequest {
   oneof kind {
     ObserveTraceStart   trace_start   = 10;
     ObserveTraceHop     trace_hop     = 11;
-    ObserveGraphQL      graphql       = 12;
-    ObserveAction       action        = 13;
-    ObserveDbSpan       db_span       = 14;
-    ObserveTraceStop    trace_stop    = 15;
+    ObserveTraceHopStop trace_hop_stop = 12;
+    ObserveGraphQL      graphql       = 13;
+    ObserveAction       action        = 14;
+    ObserveDbSpan       db_span       = 15;
+    ObserveTraceStop    trace_stop    = 16;
   }
 }
 
@@ -72,6 +73,11 @@ message ObserveDbSpan {
   int64 took_ms = 4;
   string target = 5;          // "elasticsearch", "cassandra", ...
   string index = 6;           // optional index/table
+}
+
+message ObserveTraceHopStop {
+  int32 response_code = 1;
+  int64 took_ms = 2;          // duration of this hop
 }
 
 message ObserveTraceStop {

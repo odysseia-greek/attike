@@ -90,8 +90,8 @@ func UnaryServerInterceptor(streamer Streamer, opts ...Option) grpc.UnaryServerI
 				TraceId:      meta.TraceId,
 				ParentSpanId: hopSpanID,
 				SpanId:       GenerateSpanID(),
-				Kind: &arv1.ObserveRequest_TraceStop{
-					TraceStop: &arv1.ObserveTraceStop{
+				Kind: &arv1.ObserveRequest_TraceHopStop{
+					TraceHopStop: &arv1.ObserveTraceHopStop{
 						ResponseCode: code,
 						TookMs:       dur.Milliseconds(),
 					},
