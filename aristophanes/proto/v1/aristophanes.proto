@@ -81,8 +81,8 @@ message ObserveTraceHopStop {
 }
 
 message ObserveTraceStop {
-  int32 response_code = 1;
-  int64 took_ms = 2;          // duration of this hop
+  string response_body = 1;
+  int32 response_code = 2;
 }
 
 message ObserveResponse {

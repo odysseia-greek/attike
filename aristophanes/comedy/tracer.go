@@ -184,10 +184,9 @@ func (t *TraceServiceImpl) HandleTraceHop(in *v1.ObserveTraceHop, traceID, Paren
 		},
 		Payload: &v1.AttikeEvent_TraceHop{
 			TraceHop: &v1.TraceHopEvent{
-				Method:       in.Method,
-				Url:          in.Url,
-				Host:         in.Host,
-				ResponseCode: in.ResponseCode,
+				Method: in.Method,
+				Url:    in.Url,
+				Host:   in.Host,
 			},
 		},
 	}
