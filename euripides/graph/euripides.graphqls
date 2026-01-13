@@ -1,0 +1,320 @@
+# euripides.graphqls
+#
+# Minimal “first queries” schema for Euripides.
+# Assumptions:
+# - Traces live in your tracing index (per-day backing indices behind alias "tracing")
+# - Metrics samples live in metrics alias ("metrics")
+# - Rollups live in metrics_rollup alias ("metrics_rollup")
+#
+# IMPORTANT DESIGN CHOICE:
+# From GraphQL, clients query "metrics" and can pick an aggregation level via `resolution`.
+# The resolver decides whether to hit raw metrics or rollups (or both).
+
+schema {
+    query: Query
+}
+
+# ----------------------------
+# Scalars
+# ----------------------------
+
+# Use RFC3339 / ISO8601, e.g. "2026-01-12T19:54:17.687Z"
+scalar DateTime
+
+# ----------------------------
+# Shared inputs
+# ----------------------------
+
+input TimeRangeInput {
+    start: DateTime!
+    end: DateTime!
+}
+
+enum OrderDirection {
+    ASC
+    DESC
+}
+
+enum TraceOrderBy {
+    TIME_STARTED
+    TIME_ENDED
+    TOTAL_TIME_MS
+    RESPONSE_CODE
+}
+
+input PaginationInput {
+    limit: Int = 50
+    offset: Int = 0
+}
+
+# ----------------------------
+# Traces
+# ----------------------------
+
+type Query {
+    # Trace by ID (your doc _id is traceId)
+    trace(id: ID!): Trace
+
+    # Traces between times (typically timeStarted or timeEnded).
+    # Resolver can choose the exact field(s) it filters on; simplest is:
+    #   timeStarted >= start AND timeStarted <= end
+    traces(
+        range: TimeRangeInput!
+        filter: TraceFilterInput
+        orderBy: TraceOrderBy = TIME_STARTED
+        orderDir: OrderDirection = DESC
+        page: PaginationInput = { limit: 50, offset: 0 }
+    ): TracePage!
+
+    # Metrics unified API (raw vs rollup is resolver choice).
+    metrics(
+        range: TimeRangeInput!
+        scope: MetricScopeInput
+        resolution: MetricResolution = AUTO
+        groupBy: MetricGroupBy = NONE
+        orderBy: MetricOrderBy = CPU_AVG
+        orderDir: OrderDirection = DESC
+        page: PaginationInput = { limit: 50, offset: 0 }
+    ): MetricSeriesPage!
+}
+
+input TraceFilterInput {
+    # Convenience filters (optional)
+    namespace: String
+    podName: String
+    operation: String   # graphql operation name if you store it (optional)
+    hasDbSpan: Boolean
+    hasAction: Boolean
+    minTotalTimeMs: Int
+    maxTotalTimeMs: Int
+    responseCode: Int
+}
+
+type TracePage {
+    total: Int!
+    items: [Trace!]!
+}
+
+type Trace {
+    id: ID!
+    isActive: Boolean!
+    timeStarted: DateTime!
+    timeEnded: DateTime
+    totalTimeMs: Int!
+    responseCode: Int!
+
+    # Optional convenience fields (if you can derive them cheaply)
+    namespace: String
+    podName: String
+    operation: String
+    hasDbSpan: Boolean!
+    hasAction: Boolean!
+
+    items: [TraceItem!]!
+}
+
+type TraceItem {
+    timestamp: DateTime!
+    itemType: TraceItemType!
+    spanId: String
+    parentSpanId: String
+    podName: String
+    namespace: String
+
+    # Typed payloads (nice for client UX); resolvers can return null if not applicable
+    traceStart: TraceStartEvent
+    traceHop: TraceHopEvent
+    graphql: GraphQLEvent
+    action: ActionEvent
+    dbSpan: DatabaseSpanEvent
+    traceStop: TraceStopEvent
+
+    # If you want quick debugging access too
+    rawPayload: JSON
+}
+
+# Optional JSON scalar (if your gql stack supports it; otherwise remove)
+scalar JSON
+
+enum TraceItemType {
+    TRACE_START
+    TRACE_HOP
+    GRAPHQL
+    ACTION
+    DB_SPAN
+    TRACE_STOP
+}
+
+type TraceStartEvent {
+    method: String
+    url: String
+    host: String
+    remoteAddress: String
+    rootQuery: String
+    operation: String
+}
+
+type TraceHopEvent {
+    method: String
+    url: String
+    host: String
+    responseCode: Int
+    tookMs: Int
+}
+
+type GraphQLEvent {
+    operation: String
+    rootQuery: String
+}
+
+type ActionEvent {
+    action: String
+    status: String
+    tookMs: Int
+}
+
+type DatabaseSpanEvent {
+    action: String
+    query: String
+    hits: Int
+    tookMs: Int
+    target: String
+    index: String
+}
+
+type TraceStopEvent {
+    responseBody: String
+    responseCode: Int
+    timeStarted: DateTime
+    timeEnded: DateTime
+    totalTimeMs: Int
+    isClosed: Boolean
+}
+
+# ----------------------------
+# Metrics
+# ----------------------------
+
+# What the client is asking for:
+# - AUTO: resolver chooses (raw if the range is small; rollup if range is large)
+# - RAW: force raw samples (metrics index)
+# - ROLLUP: force rollups (metrics_rollup index)
+enum MetricResolution {
+    AUTO
+    RAW
+    ROLLUP
+}
+
+# Scope lets you do:
+# - metrics for all
+# - metrics for node
+# - metrics for namespace
+# - metrics for pod
+#
+# Any omitted fields mean “all”.
+input MetricScopeInput {
+    node: String
+    namespace: String
+    podName: String
+    podUID: String
+}
+
+# How results should be grouped.
+# If NONE: returns a single series (or a small fixed set) depending on scope.
+# If e.g. BY_POD: returns one series per pod.
+enum MetricGroupBy {
+    NONE
+    BY_NODE
+    BY_NAMESPACE
+    BY_POD
+}
+
+enum MetricOrderBy {
+    CPU_AVG
+    CPU_MAX
+    MEM_AVG
+    MEM_MAX
+}
+
+type MetricSeriesPage {
+    total: Int!
+    items: [MetricSeries!]!
+}
+
+# A series is (label + points).
+# For RAW, points are dense samples.
+# For ROLLUP, points are bucketed rollups.
+type MetricSeries {
+    label: MetricSeriesLabel!
+    points: [MetricPoint!]!
+}
+
+type MetricSeriesLabel {
+    node: String
+    namespace: String
+    podName: String
+    podUID: String
+}
+
+# Unified point:
+# - In RAW mode, count will likely be 1 per point (or omitted).
+# - In ROLLUP mode, count/bucketMs are meaningful.
+type MetricPoint {
+    timestamp: DateTime!
+    bucketMs: Int
+    count: Int
+
+    cpuMCoresAvg: Float
+    cpuMCoresMax: Float
+    cpuMCoresP95: Float
+
+    memBytesAvg: Float
+    memBytesMax: Float
+    memBytesP95: Float
+
+    # Optional: include scrape duration or source tags
+    source: MetricSource
+}
+
+type MetricSource {
+    aggregator: String
+    collector: String
+    method: String
+    windowKind: String
+    windowSamples: Int
+}
+
+# ----------------------------
+# Example queries (copy/paste)
+# ----------------------------
+
+# query TraceByID($id: ID!) {
+#   trace(id: $id) {
+#     id
+#     timeStarted
+#     timeEnded
+#     totalTimeMs
+#     responseCode
+#     items { timestamp itemType podName namespace spanId parentSpanId }
+#   }
+# }
+
+# query TracesInRange($range: TimeRangeInput!) {
+#   traces(range: $range, orderBy: TIME_STARTED, orderDir: DESC, page: {limit: 20, offset: 0}) {
+#     total
+#     items { id timeStarted totalTimeMs responseCode namespace podName hasDbSpan hasAction }
+#   }
+# }
+
+# query MetricsAll($range: TimeRangeInput!) {
+#   metrics(range: $range, resolution: AUTO, groupBy: NONE) {
+#     total
+#     items { label { node namespace podName } points { timestamp cpuMCoresAvg memBytesAvg } }
+#   }
+# }
+
+# query MetricsByNamespace($range: TimeRangeInput!, $ns: String!) {
+#   metrics(range: $range, scope: {namespace: $ns}, resolution: AUTO, groupBy: BY_POD, orderBy: CPU_AVG) {
+#     items { label { podName podUID } points { timestamp cpuMCoresAvg memBytesAvg } }
+#   }
+# }

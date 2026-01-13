@@ -1,5 +1,5 @@
 # Base build
-FROM golang:1.24-alpine as base
+FROM golang:1.25-alpine as base
 
 ARG project_name
 ARG TARGETOS
@@ -22,6 +22,20 @@ ARG project_name
 ENV project_name=${project_name}
 
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /app/${project_name}
+# Dev image
+FROM debian:trixie-slim AS dev
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl dnsutils iproute2 netcat-traditional procps \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/euripides /app/euripides
+
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+USER 65532:65532
+ENTRYPOINT ["/app/euripides"]
 
 # Production build
 FROM alpine:3.20.3 as prod

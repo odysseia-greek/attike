@@ -23,7 +23,7 @@ ENV project_name=${project_name}
 
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /app/${project_name}
 # Dev image
-FROM debian:bookworm-slim AS dev
+FROM debian:trixie-slim AS dev
 WORKDIR /app
 
 
