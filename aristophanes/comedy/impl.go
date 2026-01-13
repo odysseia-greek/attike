@@ -40,6 +40,30 @@ type TraceServiceImpl struct {
 	v1.UnimplementedTraceServiceServer
 }
 
+type Streamer interface {
+	Send(*v1.ObserveRequest) error
+}
+
+type Option func(*cfg)
+
+type cfg struct {
+	HeaderKey      string
+	ContextKeyName any
+	EmitCloseHop   bool
+}
+
+func WithHeaderKey(k string) Option {
+	return func(c *cfg) { c.HeaderKey = k }
+}
+
+func WithContextKeyName(k any) Option {
+	return func(c *cfg) { c.ContextKeyName = k }
+}
+
+func WithCloseHop() Option {
+	return func(c *cfg) { c.EmitCloseHop = true }
+}
+
 type TraceServiceClient struct {
 	Impl TraceService
 }

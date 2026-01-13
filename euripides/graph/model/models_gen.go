@@ -9,11 +9,17 @@ import (
 	"strconv"
 )
 
+type TraceItemPayload interface {
+	IsTraceItemPayload()
+}
+
 type ActionEvent struct {
 	Action *string `json:"action,omitempty"`
 	Status *string `json:"status,omitempty"`
 	TookMs *int32  `json:"tookMs,omitempty"`
 }
+
+func (ActionEvent) IsTraceItemPayload() {}
 
 type DatabaseSpanEvent struct {
 	Action *string `json:"action,omitempty"`
@@ -24,10 +30,14 @@ type DatabaseSpanEvent struct {
 	Index  *string `json:"index,omitempty"`
 }
 
+func (DatabaseSpanEvent) IsTraceItemPayload() {}
+
 type GraphQLEvent struct {
 	Operation *string `json:"operation,omitempty"`
 	RootQuery *string `json:"rootQuery,omitempty"`
 }
+
+func (GraphQLEvent) IsTraceItemPayload() {}
 
 type MetricPoint struct {
 	Timestamp    string        `json:"timestamp"`
@@ -121,20 +131,16 @@ type TraceHopEvent struct {
 	TookMs       *int32  `json:"tookMs,omitempty"`
 }
 
+func (TraceHopEvent) IsTraceItemPayload() {}
+
 type TraceItem struct {
-	Timestamp    string             `json:"timestamp"`
-	ItemType     TraceItemType      `json:"itemType"`
-	SpanID       *string            `json:"spanId,omitempty"`
-	ParentSpanID *string            `json:"parentSpanId,omitempty"`
-	PodName      *string            `json:"podName,omitempty"`
-	Namespace    *string            `json:"namespace,omitempty"`
-	TraceStart   *TraceStartEvent   `json:"traceStart,omitempty"`
-	TraceHop     *TraceHopEvent     `json:"traceHop,omitempty"`
-	Graphql      *GraphQLEvent      `json:"graphql,omitempty"`
-	Action       *ActionEvent       `json:"action,omitempty"`
-	DbSpan       *DatabaseSpanEvent `json:"dbSpan,omitempty"`
-	TraceStop    *TraceStopEvent    `json:"traceStop,omitempty"`
-	RawPayload   *string            `json:"rawPayload,omitempty"`
+	Timestamp    string           `json:"timestamp"`
+	ItemType     TraceItemType    `json:"itemType"`
+	SpanID       *string          `json:"spanId,omitempty"`
+	ParentSpanID *string          `json:"parentSpanId,omitempty"`
+	PodName      *string          `json:"podName,omitempty"`
+	Namespace    *string          `json:"namespace,omitempty"`
+	Payload      TraceItemPayload `json:"payload"`
 }
 
 type TracePage struct {
@@ -151,14 +157,13 @@ type TraceStartEvent struct {
 	Operation     *string `json:"operation,omitempty"`
 }
 
+func (TraceStartEvent) IsTraceItemPayload() {}
+
 type TraceStopEvent struct {
 	ResponseBody *string `json:"responseBody,omitempty"`
-	ResponseCode *int32  `json:"responseCode,omitempty"`
-	TimeStarted  *string `json:"timeStarted,omitempty"`
-	TimeEnded    *string `json:"timeEnded,omitempty"`
-	TotalTimeMs  *int32  `json:"totalTimeMs,omitempty"`
-	IsClosed     *bool   `json:"isClosed,omitempty"`
 }
+
+func (TraceStopEvent) IsTraceItemPayload() {}
 
 type MetricGroupBy string
 

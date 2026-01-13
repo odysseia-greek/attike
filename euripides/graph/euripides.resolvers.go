@@ -14,9 +14,7 @@ import (
 
 // Trace is the resolver for the trace field.
 func (r *queryResolver) Trace(ctx context.Context, id string) (*model.Trace, error) {
-	traceResponse, _ := r.Handler.TraceById(ctx, id)
-
-	return traceResponse, nil
+	return r.Handler.TraceById(ctx, id)
 }
 
 // Traces is the resolver for the traces field.

@@ -33,6 +33,14 @@ func traceFromString(requestId string) *v1.TraceBare {
 	return trace
 }
 
+func CreateRequestId(traceID, spanID string, traceCall bool) string {
+	flag := "0"
+	if traceCall {
+		flag = "1"
+	}
+	return traceID + "+" + spanID + "+" + flag
+}
+
 func CreateCombinedId(trace *v1.TraceBare) string {
 	saveTrace := 1
 	if !trace.Save {

@@ -134,19 +134,13 @@ type ComplexityRoot struct {
 	}
 
 	TraceItem struct {
-		Action       func(childComplexity int) int
-		DbSpan       func(childComplexity int) int
-		Graphql      func(childComplexity int) int
 		ItemType     func(childComplexity int) int
 		Namespace    func(childComplexity int) int
 		ParentSpanID func(childComplexity int) int
+		Payload      func(childComplexity int) int
 		PodName      func(childComplexity int) int
-		RawPayload   func(childComplexity int) int
 		SpanID       func(childComplexity int) int
 		Timestamp    func(childComplexity int) int
-		TraceHop     func(childComplexity int) int
-		TraceStart   func(childComplexity int) int
-		TraceStop    func(childComplexity int) int
 	}
 
 	TracePage struct {
@@ -164,12 +158,7 @@ type ComplexityRoot struct {
 	}
 
 	TraceStopEvent struct {
-		IsClosed     func(childComplexity int) int
 		ResponseBody func(childComplexity int) int
-		ResponseCode func(childComplexity int) int
-		TimeEnded    func(childComplexity int) int
-		TimeStarted  func(childComplexity int) int
-		TotalTimeMs  func(childComplexity int) int
 	}
 }
 
@@ -548,24 +537,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TraceHopEvent.URL(childComplexity), true
 
-	case "TraceItem.action":
-		if e.complexity.TraceItem.Action == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.Action(childComplexity), true
-	case "TraceItem.dbSpan":
-		if e.complexity.TraceItem.DbSpan == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.DbSpan(childComplexity), true
-	case "TraceItem.graphql":
-		if e.complexity.TraceItem.Graphql == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.Graphql(childComplexity), true
 	case "TraceItem.itemType":
 		if e.complexity.TraceItem.ItemType == nil {
 			break
@@ -584,18 +555,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TraceItem.ParentSpanID(childComplexity), true
+	case "TraceItem.payload":
+		if e.complexity.TraceItem.Payload == nil {
+			break
+		}
+
+		return e.complexity.TraceItem.Payload(childComplexity), true
 	case "TraceItem.podName":
 		if e.complexity.TraceItem.PodName == nil {
 			break
 		}
 
 		return e.complexity.TraceItem.PodName(childComplexity), true
-	case "TraceItem.rawPayload":
-		if e.complexity.TraceItem.RawPayload == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.RawPayload(childComplexity), true
 	case "TraceItem.spanId":
 		if e.complexity.TraceItem.SpanID == nil {
 			break
@@ -608,24 +579,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TraceItem.Timestamp(childComplexity), true
-	case "TraceItem.traceHop":
-		if e.complexity.TraceItem.TraceHop == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.TraceHop(childComplexity), true
-	case "TraceItem.traceStart":
-		if e.complexity.TraceItem.TraceStart == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.TraceStart(childComplexity), true
-	case "TraceItem.traceStop":
-		if e.complexity.TraceItem.TraceStop == nil {
-			break
-		}
-
-		return e.complexity.TraceItem.TraceStop(childComplexity), true
 
 	case "TracePage.items":
 		if e.complexity.TracePage.Items == nil {
@@ -677,42 +630,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TraceStartEvent.URL(childComplexity), true
 
-	case "TraceStopEvent.isClosed":
-		if e.complexity.TraceStopEvent.IsClosed == nil {
-			break
-		}
-
-		return e.complexity.TraceStopEvent.IsClosed(childComplexity), true
 	case "TraceStopEvent.responseBody":
 		if e.complexity.TraceStopEvent.ResponseBody == nil {
 			break
 		}
 
 		return e.complexity.TraceStopEvent.ResponseBody(childComplexity), true
-	case "TraceStopEvent.responseCode":
-		if e.complexity.TraceStopEvent.ResponseCode == nil {
-			break
-		}
-
-		return e.complexity.TraceStopEvent.ResponseCode(childComplexity), true
-	case "TraceStopEvent.timeEnded":
-		if e.complexity.TraceStopEvent.TimeEnded == nil {
-			break
-		}
-
-		return e.complexity.TraceStopEvent.TimeEnded(childComplexity), true
-	case "TraceStopEvent.timeStarted":
-		if e.complexity.TraceStopEvent.TimeStarted == nil {
-			break
-		}
-
-		return e.complexity.TraceStopEvent.TimeStarted(childComplexity), true
-	case "TraceStopEvent.totalTimeMs":
-		if e.complexity.TraceStopEvent.TotalTimeMs == nil {
-			break
-		}
-
-		return e.complexity.TraceStopEvent.TotalTimeMs(childComplexity), true
 
 	}
 	return 0, false
@@ -2633,20 +2556,8 @@ func (ec *executionContext) fieldContext_Trace_items(_ context.Context, field gr
 				return ec.fieldContext_TraceItem_podName(ctx, field)
 			case "namespace":
 				return ec.fieldContext_TraceItem_namespace(ctx, field)
-			case "traceStart":
-				return ec.fieldContext_TraceItem_traceStart(ctx, field)
-			case "traceHop":
-				return ec.fieldContext_TraceItem_traceHop(ctx, field)
-			case "graphql":
-				return ec.fieldContext_TraceItem_graphql(ctx, field)
-			case "action":
-				return ec.fieldContext_TraceItem_action(ctx, field)
-			case "dbSpan":
-				return ec.fieldContext_TraceItem_dbSpan(ctx, field)
-			case "traceStop":
-				return ec.fieldContext_TraceItem_traceStop(ctx, field)
-			case "rawPayload":
-				return ec.fieldContext_TraceItem_rawPayload(ctx, field)
+			case "payload":
+				return ec.fieldContext_TraceItem_payload(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TraceItem", field.Name)
 		},
@@ -2973,272 +2884,30 @@ func (ec *executionContext) fieldContext_TraceItem_namespace(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _TraceItem_traceStart(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
+func (ec *executionContext) _TraceItem_payload(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_TraceItem_traceStart,
+		ec.fieldContext_TraceItem_payload,
 		func(ctx context.Context) (any, error) {
-			return obj.TraceStart, nil
+			return obj.Payload, nil
 		},
 		nil,
-		ec.marshalOTraceStartEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceStartEvent,
+		ec.marshalNTraceItemPayload2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemPayload,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_TraceItem_traceStart(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TraceItem_payload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "TraceItem",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "method":
-				return ec.fieldContext_TraceStartEvent_method(ctx, field)
-			case "url":
-				return ec.fieldContext_TraceStartEvent_url(ctx, field)
-			case "host":
-				return ec.fieldContext_TraceStartEvent_host(ctx, field)
-			case "remoteAddress":
-				return ec.fieldContext_TraceStartEvent_remoteAddress(ctx, field)
-			case "rootQuery":
-				return ec.fieldContext_TraceStartEvent_rootQuery(ctx, field)
-			case "operation":
-				return ec.fieldContext_TraceStartEvent_operation(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TraceStartEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceItem_traceHop(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceItem_traceHop,
-		func(ctx context.Context) (any, error) {
-			return obj.TraceHop, nil
-		},
-		nil,
-		ec.marshalOTraceHopEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceHopEvent,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceItem_traceHop(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceItem",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "method":
-				return ec.fieldContext_TraceHopEvent_method(ctx, field)
-			case "url":
-				return ec.fieldContext_TraceHopEvent_url(ctx, field)
-			case "host":
-				return ec.fieldContext_TraceHopEvent_host(ctx, field)
-			case "responseCode":
-				return ec.fieldContext_TraceHopEvent_responseCode(ctx, field)
-			case "tookMs":
-				return ec.fieldContext_TraceHopEvent_tookMs(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TraceHopEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceItem_graphql(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceItem_graphql,
-		func(ctx context.Context) (any, error) {
-			return obj.Graphql, nil
-		},
-		nil,
-		ec.marshalOGraphQLEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐGraphQLEvent,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceItem_graphql(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceItem",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "operation":
-				return ec.fieldContext_GraphQLEvent_operation(ctx, field)
-			case "rootQuery":
-				return ec.fieldContext_GraphQLEvent_rootQuery(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type GraphQLEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceItem_action(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceItem_action,
-		func(ctx context.Context) (any, error) {
-			return obj.Action, nil
-		},
-		nil,
-		ec.marshalOActionEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐActionEvent,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceItem_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceItem",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "action":
-				return ec.fieldContext_ActionEvent_action(ctx, field)
-			case "status":
-				return ec.fieldContext_ActionEvent_status(ctx, field)
-			case "tookMs":
-				return ec.fieldContext_ActionEvent_tookMs(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ActionEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceItem_dbSpan(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceItem_dbSpan,
-		func(ctx context.Context) (any, error) {
-			return obj.DbSpan, nil
-		},
-		nil,
-		ec.marshalODatabaseSpanEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐDatabaseSpanEvent,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceItem_dbSpan(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceItem",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "action":
-				return ec.fieldContext_DatabaseSpanEvent_action(ctx, field)
-			case "query":
-				return ec.fieldContext_DatabaseSpanEvent_query(ctx, field)
-			case "hits":
-				return ec.fieldContext_DatabaseSpanEvent_hits(ctx, field)
-			case "tookMs":
-				return ec.fieldContext_DatabaseSpanEvent_tookMs(ctx, field)
-			case "target":
-				return ec.fieldContext_DatabaseSpanEvent_target(ctx, field)
-			case "index":
-				return ec.fieldContext_DatabaseSpanEvent_index(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type DatabaseSpanEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceItem_traceStop(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceItem_traceStop,
-		func(ctx context.Context) (any, error) {
-			return obj.TraceStop, nil
-		},
-		nil,
-		ec.marshalOTraceStopEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceStopEvent,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceItem_traceStop(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceItem",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "responseBody":
-				return ec.fieldContext_TraceStopEvent_responseBody(ctx, field)
-			case "responseCode":
-				return ec.fieldContext_TraceStopEvent_responseCode(ctx, field)
-			case "timeStarted":
-				return ec.fieldContext_TraceStopEvent_timeStarted(ctx, field)
-			case "timeEnded":
-				return ec.fieldContext_TraceStopEvent_timeEnded(ctx, field)
-			case "totalTimeMs":
-				return ec.fieldContext_TraceStopEvent_totalTimeMs(ctx, field)
-			case "isClosed":
-				return ec.fieldContext_TraceStopEvent_isClosed(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TraceStopEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceItem_rawPayload(ctx context.Context, field graphql.CollectedField, obj *model.TraceItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceItem_rawPayload,
-		func(ctx context.Context) (any, error) {
-			return obj.RawPayload, nil
-		},
-		nil,
-		ec.marshalOJSON2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceItem_rawPayload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceItem",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type JSON does not have child fields")
+			return nil, errors.New("field of type TraceItemPayload does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3526,151 +3195,6 @@ func (ec *executionContext) fieldContext_TraceStopEvent_responseBody(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceStopEvent_responseCode(ctx context.Context, field graphql.CollectedField, obj *model.TraceStopEvent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceStopEvent_responseCode,
-		func(ctx context.Context) (any, error) {
-			return obj.ResponseCode, nil
-		},
-		nil,
-		ec.marshalOInt2ᚖint32,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceStopEvent_responseCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceStopEvent",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceStopEvent_timeStarted(ctx context.Context, field graphql.CollectedField, obj *model.TraceStopEvent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceStopEvent_timeStarted,
-		func(ctx context.Context) (any, error) {
-			return obj.TimeStarted, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceStopEvent_timeStarted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceStopEvent",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceStopEvent_timeEnded(ctx context.Context, field graphql.CollectedField, obj *model.TraceStopEvent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceStopEvent_timeEnded,
-		func(ctx context.Context) (any, error) {
-			return obj.TimeEnded, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceStopEvent_timeEnded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceStopEvent",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceStopEvent_totalTimeMs(ctx context.Context, field graphql.CollectedField, obj *model.TraceStopEvent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceStopEvent_totalTimeMs,
-		func(ctx context.Context) (any, error) {
-			return obj.TotalTimeMs, nil
-		},
-		nil,
-		ec.marshalOInt2ᚖint32,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceStopEvent_totalTimeMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceStopEvent",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TraceStopEvent_isClosed(ctx context.Context, field graphql.CollectedField, obj *model.TraceStopEvent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TraceStopEvent_isClosed,
-		func(ctx context.Context) (any, error) {
-			return obj.IsClosed, nil
-		},
-		nil,
-		ec.marshalOBoolean2ᚖbool,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TraceStopEvent_isClosed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TraceStopEvent",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5325,11 +4849,66 @@ func (ec *executionContext) unmarshalInputTraceFilterInput(ctx context.Context, 
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _TraceItemPayload(ctx context.Context, sel ast.SelectionSet, obj model.TraceItemPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.TraceStopEvent:
+		return ec._TraceStopEvent(ctx, sel, &obj)
+	case *model.TraceStopEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TraceStopEvent(ctx, sel, obj)
+	case model.TraceStartEvent:
+		return ec._TraceStartEvent(ctx, sel, &obj)
+	case *model.TraceStartEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TraceStartEvent(ctx, sel, obj)
+	case model.TraceHopEvent:
+		return ec._TraceHopEvent(ctx, sel, &obj)
+	case *model.TraceHopEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TraceHopEvent(ctx, sel, obj)
+	case model.GraphQLEvent:
+		return ec._GraphQLEvent(ctx, sel, &obj)
+	case *model.GraphQLEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GraphQLEvent(ctx, sel, obj)
+	case model.DatabaseSpanEvent:
+		return ec._DatabaseSpanEvent(ctx, sel, &obj)
+	case *model.DatabaseSpanEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DatabaseSpanEvent(ctx, sel, obj)
+	case model.ActionEvent:
+		return ec._ActionEvent(ctx, sel, &obj)
+	case *model.ActionEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ActionEvent(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of TraceItemPayload must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
 
-var actionEventImplementors = []string{"ActionEvent"}
+var actionEventImplementors = []string{"ActionEvent", "TraceItemPayload"}
 
 func (ec *executionContext) _ActionEvent(ctx context.Context, sel ast.SelectionSet, obj *model.ActionEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, actionEventImplementors)
@@ -5369,7 +4948,7 @@ func (ec *executionContext) _ActionEvent(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
-var databaseSpanEventImplementors = []string{"DatabaseSpanEvent"}
+var databaseSpanEventImplementors = []string{"DatabaseSpanEvent", "TraceItemPayload"}
 
 func (ec *executionContext) _DatabaseSpanEvent(ctx context.Context, sel ast.SelectionSet, obj *model.DatabaseSpanEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, databaseSpanEventImplementors)
@@ -5415,7 +4994,7 @@ func (ec *executionContext) _DatabaseSpanEvent(ctx context.Context, sel ast.Sele
 	return out
 }
 
-var graphQLEventImplementors = []string{"GraphQLEvent"}
+var graphQLEventImplementors = []string{"GraphQLEvent", "TraceItemPayload"}
 
 func (ec *executionContext) _GraphQLEvent(ctx context.Context, sel ast.SelectionSet, obj *model.GraphQLEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, graphQLEventImplementors)
@@ -5879,7 +5458,7 @@ func (ec *executionContext) _Trace(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
-var traceHopEventImplementors = []string{"TraceHopEvent"}
+var traceHopEventImplementors = []string{"TraceHopEvent", "TraceItemPayload"}
 
 func (ec *executionContext) _TraceHopEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TraceHopEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, traceHopEventImplementors)
@@ -5952,20 +5531,11 @@ func (ec *executionContext) _TraceItem(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._TraceItem_podName(ctx, field, obj)
 		case "namespace":
 			out.Values[i] = ec._TraceItem_namespace(ctx, field, obj)
-		case "traceStart":
-			out.Values[i] = ec._TraceItem_traceStart(ctx, field, obj)
-		case "traceHop":
-			out.Values[i] = ec._TraceItem_traceHop(ctx, field, obj)
-		case "graphql":
-			out.Values[i] = ec._TraceItem_graphql(ctx, field, obj)
-		case "action":
-			out.Values[i] = ec._TraceItem_action(ctx, field, obj)
-		case "dbSpan":
-			out.Values[i] = ec._TraceItem_dbSpan(ctx, field, obj)
-		case "traceStop":
-			out.Values[i] = ec._TraceItem_traceStop(ctx, field, obj)
-		case "rawPayload":
-			out.Values[i] = ec._TraceItem_rawPayload(ctx, field, obj)
+		case "payload":
+			out.Values[i] = ec._TraceItem_payload(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6033,7 +5603,7 @@ func (ec *executionContext) _TracePage(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
-var traceStartEventImplementors = []string{"TraceStartEvent"}
+var traceStartEventImplementors = []string{"TraceStartEvent", "TraceItemPayload"}
 
 func (ec *executionContext) _TraceStartEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TraceStartEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, traceStartEventImplementors)
@@ -6079,7 +5649,7 @@ func (ec *executionContext) _TraceStartEvent(ctx context.Context, sel ast.Select
 	return out
 }
 
-var traceStopEventImplementors = []string{"TraceStopEvent"}
+var traceStopEventImplementors = []string{"TraceStopEvent", "TraceItemPayload"}
 
 func (ec *executionContext) _TraceStopEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TraceStopEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, traceStopEventImplementors)
@@ -6092,16 +5662,6 @@ func (ec *executionContext) _TraceStopEvent(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("TraceStopEvent")
 		case "responseBody":
 			out.Values[i] = ec._TraceStopEvent_responseBody(ctx, field, obj)
-		case "responseCode":
-			out.Values[i] = ec._TraceStopEvent_responseCode(ctx, field, obj)
-		case "timeStarted":
-			out.Values[i] = ec._TraceStopEvent_timeStarted(ctx, field, obj)
-		case "timeEnded":
-			out.Values[i] = ec._TraceStopEvent_timeEnded(ctx, field, obj)
-		case "totalTimeMs":
-			out.Values[i] = ec._TraceStopEvent_totalTimeMs(ctx, field, obj)
-		case "isClosed":
-			out.Values[i] = ec._TraceStopEvent_isClosed(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6785,6 +6345,16 @@ func (ec *executionContext) marshalNTraceItem2ᚖgithubᚗcomᚋodysseiaᚑgreek
 	return ec._TraceItem(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNTraceItemPayload2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemPayload(ctx context.Context, sel ast.SelectionSet, v model.TraceItemPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TraceItemPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNTraceItemType2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemType(ctx context.Context, v any) (model.TraceItemType, error) {
 	var res model.TraceItemType
 	err := res.UnmarshalGQL(v)
@@ -7062,13 +6632,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOActionEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐActionEvent(ctx context.Context, sel ast.SelectionSet, v *model.ActionEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ActionEvent(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7097,13 +6660,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
-}
-
-func (ec *executionContext) marshalODatabaseSpanEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐDatabaseSpanEvent(ctx context.Context, sel ast.SelectionSet, v *model.DatabaseSpanEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._DatabaseSpanEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v any) (*string, error) {
@@ -7141,13 +6697,6 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) marshalOGraphQLEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐGraphQLEvent(ctx context.Context, sel ast.SelectionSet, v *model.GraphQLEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._GraphQLEvent(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOInt2ᚖint32(ctx context.Context, v any) (*int32, error) {
 	if v == nil {
 		return nil, nil
@@ -7163,24 +6712,6 @@ func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.Se
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalInt32(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOJSON2ᚖstring(ctx context.Context, v any) (*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalString(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOJSON2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	_ = sel
-	_ = ctx
-	res := graphql.MarshalString(*v)
 	return res
 }
 
@@ -7304,13 +6835,6 @@ func (ec *executionContext) unmarshalOTraceFilterInput2ᚖgithubᚗcomᚋodyssei
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOTraceHopEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceHopEvent(ctx context.Context, sel ast.SelectionSet, v *model.TraceHopEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TraceHopEvent(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOTraceOrderBy2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceOrderBy(ctx context.Context, v any) (*model.TraceOrderBy, error) {
 	if v == nil {
 		return nil, nil
@@ -7325,20 +6849,6 @@ func (ec *executionContext) marshalOTraceOrderBy2ᚖgithubᚗcomᚋodysseiaᚑgr
 		return graphql.Null
 	}
 	return v
-}
-
-func (ec *executionContext) marshalOTraceStartEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceStartEvent(ctx context.Context, sel ast.SelectionSet, v *model.TraceStartEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TraceStartEvent(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOTraceStopEvent2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceStopEvent(ctx context.Context, sel ast.SelectionSet, v *model.TraceStopEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TraceStopEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

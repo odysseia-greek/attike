@@ -49,8 +49,6 @@ message ObserveTraceHop {
   string method = 1;          // "GET", "POST", "grpc", "internal"
   string url = 2;             // path or URL (for grpc you can use "/pkg.Service/Method")
   string host = 3;            // destination service/host
-  int32 response_code = 4;    // 0 if unknown / not applicable
-  int64 took_ms = 5;          // duration of this hop
 }
 
 message ObserveGraphQL {
@@ -77,8 +75,8 @@ message ObserveDbSpan {
 }
 
 message ObserveTraceStop {
-  string response_body = 1;
-  int32 response_code = 2;
+  int32 response_code = 1;
+  int64 took_ms = 2;          // duration of this hop
 }
 
 message ObserveResponse {

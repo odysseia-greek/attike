@@ -9,11 +9,6 @@
 # IMPORTANT DESIGN CHOICE:
 # From GraphQL, clients query "metrics" and can pick an aggregation level via `resolution`.
 # The resolver decides whether to hit raw metrics or rollups (or both).
-
-schema {
-    query: Query
-}
-
 # ----------------------------
 # Scalars
 # ----------------------------
@@ -94,7 +89,6 @@ type TracePage {
     total: Int!
     items: [Trace!]!
 }
-
 type Trace {
     id: ID!
     isActive: Boolean!
@@ -103,7 +97,6 @@ type Trace {
     totalTimeMs: Int!
     responseCode: Int!
 
-    # Optional convenience fields (if you can derive them cheaply)
     namespace: String
     podName: String
     operation: String
@@ -113,6 +106,14 @@ type Trace {
     items: [TraceItem!]!
 }
 
+union TraceItemPayload =
+    TraceStartEvent
+    | TraceHopEvent
+    | GraphQLEvent
+    | ActionEvent
+    | DatabaseSpanEvent
+    | TraceStopEvent
+
 type TraceItem {
     timestamp: DateTime!
     itemType: TraceItemType!
@@ -121,20 +122,8 @@ type TraceItem {
     podName: String
     namespace: String
 
-    # Typed payloads (nice for client UX); resolvers can return null if not applicable
-    traceStart: TraceStartEvent
-    traceHop: TraceHopEvent
-    graphql: GraphQLEvent
-    action: ActionEvent
-    dbSpan: DatabaseSpanEvent
-    traceStop: TraceStopEvent
-
-    # If you want quick debugging access too
-    rawPayload: JSON
+    payload: TraceItemPayload!
 }
-
-# Optional JSON scalar (if your gql stack supports it; otherwise remove)
-scalar JSON
 
 enum TraceItemType {
     TRACE_START
@@ -184,11 +173,6 @@ type DatabaseSpanEvent {
 
 type TraceStopEvent {
     responseBody: String
-    responseCode: Int
-    timeStarted: DateTime
-    timeEnded: DateTime
-    totalTimeMs: Int
-    isClosed: Boolean
 }
 
 # ----------------------------
