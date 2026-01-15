@@ -6,7 +6,7 @@ require (
 	github.com/odysseia-greek/agora/aristoteles v0.2.2
 	github.com/odysseia-greek/agora/eupalinos v0.2.7
 	github.com/odysseia-greek/agora/plato v0.2.12
-	github.com/odysseia-greek/attike/aristophanes v0.7.0-rho6
+	github.com/odysseia-greek/attike/aristophanes v0.7.0-rho8
 	github.com/odysseia-greek/delphi/aristides v0.0.1
 	google.golang.org/protobuf v1.36.11
 )

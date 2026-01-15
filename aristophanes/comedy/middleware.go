@@ -182,8 +182,8 @@ func TraceWithHopStop(tracer arv1.TraceService_ChorusClient) Adapter {
 			// Emit hop stop (this replaces CloseSpan Action)
 			if err := tracer.Send(&arv1.ObserveRequest{
 				TraceId:      trace.TraceId,
-				ParentSpanId: hopSpanId,        // stop is child of the hop span
-				SpanId:       GenerateSpanID(), // or reuse hopSpanId if you prefer "close same span"
+				ParentSpanId: parentSpanId,        // stop is child of the hop span
+				SpanId:       hopSpanId, // or reuse hopSpanId if you prefer "close same span"
 				Kind: &arv1.ObserveRequest_TraceHopStop{
 					TraceHopStop: &arv1.ObserveTraceHopStop{
 						ResponseCode: int32(statusCode),
@@ -197,4 +197,16 @@ func TraceWithHopStop(tracer arv1.TraceService_ChorusClient) Adapter {
 			logging.Api(statusCode, r.Method, requestId, r.RemoteAddr, r.URL.Path, duration)
 		}
 	}
+}
+
+stop := &arv1.ObserveRequest{
+TraceId:      trace.TraceId,
+ParentSpanId: parentSpan,  // same parent as start
+SpanId:       graphqlSpan, // same span as start
+Kind: &arv1.ObserveRequest_TraceHopStop{
+TraceHopStop: &arv1.ObserveTraceHopStop{
+ResponseCode: int32(status),      // HTTP code
+TookMs:       dur.Milliseconds(), // duration in ms
+},
+},
 }
