@@ -39,7 +39,7 @@ func UnaryServerInterceptor(streamer Streamer, opts ...Option) grpc.UnaryServerI
 			return handler(ctx, req)
 		}
 
-		meta := traceFromString(requestID)
+		meta := TraceBareFromString(requestID)
 		if !meta.Save || meta.TraceId == "" || meta.SpanId == "" {
 			return handler(ctx, req)
 		}
@@ -88,8 +88,8 @@ func UnaryServerInterceptor(streamer Streamer, opts ...Option) grpc.UnaryServerI
 
 			_ = streamer.Send(&arv1.ObserveRequest{
 				TraceId:      meta.TraceId,
-				ParentSpanId: hopSpanID,
-				SpanId:       GenerateSpanID(),
+				ParentSpanId: meta.SpanId,
+				SpanId:       hopSpanID,
 				Kind: &arv1.ObserveRequest_TraceHopStop{
 					TraceHopStop: &arv1.ObserveTraceHopStop{
 						ResponseCode: code,

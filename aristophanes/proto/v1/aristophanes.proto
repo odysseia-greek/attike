@@ -105,6 +105,7 @@ enum ItemType {
   ACTION      = 4;
   DB_SPAN     = 5;
   TRACE_STOP  = 6;
+  TRACE_HOP_STOP = 7;
 }
 
 message TraceCommon {

@@ -176,12 +176,12 @@ func (t *TraceServiceImpl) HandleTraceStop(close *v1.ObserveTraceStop, traceID, 
 	t.commands <- MapCommand{Action: "delete", TraceID: traceID}
 }
 
-func (t *TraceServiceImpl) HandleTraceHop(in *v1.ObserveTraceHop, traceID, ParentSpanID, spanID string) {
+func (t *TraceServiceImpl) HandleTraceHop(in *v1.ObserveTraceHop, traceID, spanID, parentSpanID string) {
 	ev := &v1.AttikeEvent{
 		Common: &v1.TraceCommon{
 			TraceId:      traceID,
 			SpanId:       spanID,
-			ParentSpanId: ParentSpanID, // or spanID if you want root parent == root
+			ParentSpanId: parentSpanID, // or spanID if you want root parent == root
 			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
@@ -215,7 +215,7 @@ func (t *TraceServiceImpl) HandleTraceStopHop(close *v1.ObserveTraceHopStop, tra
 			Timestamp:    time.Now().UTC().Format("2006-01-02T15:04:05.000"),
 			PodName:      t.PodName,
 			Namespace:    t.Namespace,
-			ItemType:     v1.ItemType_TRACE_STOP,
+			ItemType:     v1.ItemType_TRACE_HOP_STOP,
 		},
 		Payload: &v1.AttikeEvent_TraceHopStop{
 			TraceHopStop: &v1.TraceHopStopEvent{
