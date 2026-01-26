@@ -50,16 +50,9 @@ type Query {
     # Trace by ID (your doc _id is traceId)
     trace(id: ID!): Trace
 
-    # Traces between times (typically timeStarted or timeEnded).
-    # Resolver can choose the exact field(s) it filters on; simplest is:
-    #   timeStarted >= start AND timeStarted <= end
-    traces(
-        range: TimeRangeInput!
-        filter: TraceFilterInput
-        orderBy: TraceOrderBy = TIME_STARTED
-        orderDir: OrderDirection = DESC
-        page: PaginationInput = { limit: 50, offset: 0 }
-    ): TracePage!
+    tracePoll(limit: Int!): EnqueueItems
+    traceSearch(input: TraceSearchInput!): TracePage!
+
 
     # Metrics unified API (raw vs rollup is resolver choice).
     metrics(
@@ -73,22 +66,47 @@ type Query {
     ): MetricSeriesPage!
 }
 
-input TraceFilterInput {
-    # Convenience filters (optional)
-    namespace: String
-    podName: String
-    operation: String   # graphql operation name if you store it (optional)
-    hasDbSpan: Boolean
-    hasAction: Boolean
-    minTotalTimeMs: Int
-    maxTotalTimeMs: Int
+input TraceSearchInput {
+    window: TraceWindow!           # 5m/10m/30m/1h/2h/12h/24h
+    limit: Int = 50
+
     responseCode: Int
+    timeTookGreaterThan: Int
+    operation: String
+}
+
+enum TraceWindow {
+    M5
+    M10
+    M30
+    H1
+    H2
+    H12
+    H24
 }
 
 type TracePage {
     total: Int!
-    items: [Trace!]!
+    items: [TraceSummary!]!
 }
+
+type EnqueueItems {
+    traces: [TraceSummary!]!
+    updatedAt: DateTime!
+}
+
+type TraceSummary {
+    id: ID!
+    isActive: Boolean!
+    hasDbSpan: Boolean!
+    timeStarted: DateTime
+    timeEnded: DateTime
+    rootQuery: String!
+    totalTimeMs: Int!
+    responseCode: Int!
+    numberOfItems: Int!
+}
+
 type Trace {
     id: ID!
     isActive: Boolean!
@@ -113,6 +131,7 @@ union TraceItemPayload =
     | ActionEvent
     | DatabaseSpanEvent
     | TraceStopEvent
+    | TraceHopStopEvent
 
 type TraceItem {
     timestamp: DateTime!
@@ -122,7 +141,7 @@ type TraceItem {
     podName: String
     namespace: String
 
-    payload: TraceItemPayload!
+    payload: TraceItemPayload
 }
 
 enum TraceItemType {
@@ -132,6 +151,7 @@ enum TraceItemType {
     ACTION
     DB_SPAN
     TRACE_STOP
+    TRACE_HOP_STOP
 }
 
 type TraceStartEvent {
@@ -147,6 +167,9 @@ type TraceHopEvent {
     method: String
     url: String
     host: String
+}
+
+type TraceHopStopEvent {
     responseCode: Int
     tookMs: Int
 }
@@ -167,8 +190,6 @@ type DatabaseSpanEvent {
     query: String
     hits: Int
     tookMs: Int
-    target: String
-    index: String
 }
 
 type TraceStopEvent {

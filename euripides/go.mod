@@ -7,8 +7,9 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/odysseia-greek/agora/aristoteles v0.2.2
 	github.com/odysseia-greek/agora/eupalinos v0.2.7
-	github.com/odysseia-greek/agora/plato v0.2.12
+	github.com/odysseia-greek/agora/plato v0.2.16
 	github.com/odysseia-greek/delphi/aristides v0.0.1
+	github.com/stretchr/testify v1.11.1
 	github.com/vektah/gqlparser/v2 v2.5.31
 )
 
@@ -44,7 +45,6 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect

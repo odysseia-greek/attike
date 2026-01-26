@@ -3,12 +3,14 @@ package tragedy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
 
 	pb "github.com/odysseia-greek/agora/eupalinos/proto"
 	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/agora/plato/service"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -78,6 +80,12 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 		doc := st.doc
 		mu.Unlock()
 
+		if doc.TimeEnded != nil || doc.TotalTime > 0 {
+			doc.IsActive = false
+		}
+
+		doc.NumberOfItems = int32(len(doc.Items))
+
 		sortTraceItems(doc.Items)
 		body, err := json.Marshal(doc)
 		if err != nil {
@@ -89,6 +97,11 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 		if err != nil {
 			logging.Error("index trace doc failed: " + err.Error())
 			return
+		}
+
+		err = g.enqueueTraceData(ctx, traceID, doc)
+		if err != nil {
+			logging.Error(err.Error())
 		}
 
 		logging.Trace("trace doc created: " + traceID)
@@ -200,6 +213,16 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 					st.doc.TimeStarted = common.GetTimestamp()
 				}
 
+				op := extractOperationFromEventJSON(evJSON)
+				if op != "" {
+					st.doc.Operation = op
+				} else if st.doc.Operation == "" {
+					st.doc.Operation = "unknown"
+				}
+
+			case *v1.AttikeEvent_DbSpan:
+				st.doc.ContainsDBSpan = true
+
 			case *v1.AttikeEvent_TraceStop:
 				stop := ev.GetTraceStop()
 				st.doc.IsActive = false
@@ -290,13 +313,92 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 func sortTraceItems(items []TraceItem) {
 	sort.SliceStable(items, func(i, j int) bool {
 		a, b := items[i], items[j]
+
+		pa := traceItemPriority(a.ItemType)
+		pb := traceItemPriority(b.ItemType)
+		if pa != pb {
+			return pa < pb
+		}
+
+		// Same priority → order by timestamp
 		if a.Timestamp != b.Timestamp {
 			return a.Timestamp < b.Timestamp
 		}
-		// tie-breakers (pick whatever you like)
+
+		// Tie-breakers (deterministic, stable)
 		if a.SpanID != b.SpanID {
 			return a.SpanID < b.SpanID
 		}
 		return a.ItemType < b.ItemType
 	})
+}
+
+func traceItemPriority(itemType string) int {
+	switch itemType {
+	case "TRACE_START":
+		return 0
+	case "TRACE_STOP":
+		return 100
+	default:
+		return 10
+	}
+}
+
+type attikeEventWrapper struct {
+	TraceStart *traceStartPayload `json:"traceStart,omitempty"`
+	// in case you ever emit snake_case:
+	TraceStartSnake *traceStartPayload `json:"trace_start,omitempty"`
+}
+
+type traceStartPayload struct {
+	Operation string `json:"operation"`
+}
+
+func extractOperationFromEventJSON(payload json.RawMessage) string {
+	var w attikeEventWrapper
+	if err := json.Unmarshal(payload, &w); err != nil {
+		return ""
+	}
+	if w.TraceStart != nil && w.TraceStart.Operation != "" {
+		return w.TraceStart.Operation
+	}
+	if w.TraceStartSnake != nil && w.TraceStartSnake.Operation != "" {
+		return w.TraceStartSnake.Operation
+	}
+	return ""
+}
+
+func (g *GathererImpl) enqueueTraceData(ctx context.Context, traceID string, doc TraceDoc) error {
+	ctx = context.WithValue(ctx, service.HeaderKey, traceID)
+
+	dataToBeSend := &EnqueueTraceItem{
+		TraceID:   traceID,
+		IsActive:  doc.IsActive,
+		Operation: doc.Operation,
+
+		TimeStarted:    doc.TimeStarted,
+		TimeEnded:      doc.TimeEnded,
+		TotalTime:      doc.TotalTime,
+		ResponseCode:   doc.ResponseCode,
+		ContainsDBSpan: doc.ContainsDBSpan,
+		NumberOfItems:  doc.NumberOfItems,
+	}
+
+	data, err := json.Marshal(dataToBeSend)
+	if err != nil {
+		return fmt.Errorf("error marshalling trace data: %s", err)
+	}
+
+	message := &pb.EpistelloBytes{
+		Data:    data,
+		Channel: g.ReportChannel,
+	}
+
+	queue, err := g.Eupalinos.EnqueueMessageBytes(ctx, message)
+	if err != nil {
+		return fmt.Errorf("error queueing trace ID %s: %s", traceID, err)
+	}
+
+	logging.Debug(fmt.Sprintf("queued with id: %s and traceid: %s", queue.Id, traceID))
+	return nil
 }

@@ -2,6 +2,14 @@ schema {
   query: RootQuery
 }
 
+type RootQuery {
+  metrics(order: String, timeSpan: String): Metrics
+
+  """Get traces"""
+  traces(input: TraceQueryInput): [ParentTrace]
+}
+
+
 type CloseTrace {
   itemType: String
   metrics: tracingMetrics
@@ -75,13 +83,6 @@ type Pod {
   name: String
 }
 
-type RootQuery {
-  metrics(order: String, timeSpan: String): Metrics
-
-  """Get traces"""
-  traces(input: TraceQueryInput): [ParentTrace]
-}
-
 type Span {
   action: String
   itemType: String
@@ -111,7 +112,7 @@ type StartTrace {
   url: String
 }
 
-type Trace {
+type TraceParent {
   host: String
   itemType: String
   method: String

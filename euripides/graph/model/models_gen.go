@@ -26,11 +26,14 @@ type DatabaseSpanEvent struct {
 	Query  *string `json:"query,omitempty"`
 	Hits   *int32  `json:"hits,omitempty"`
 	TookMs *int32  `json:"tookMs,omitempty"`
-	Target *string `json:"target,omitempty"`
-	Index  *string `json:"index,omitempty"`
 }
 
 func (DatabaseSpanEvent) IsTraceItemPayload() {}
+
+type EnqueueItems struct {
+	Traces    []*TraceSummary `json:"traces"`
+	UpdatedAt string          `json:"updatedAt"`
+}
 
 type GraphQLEvent struct {
 	Operation *string `json:"operation,omitempty"`
@@ -112,26 +115,20 @@ type Trace struct {
 	Items        []*TraceItem `json:"items"`
 }
 
-type TraceFilterInput struct {
-	Namespace      *string `json:"namespace,omitempty"`
-	PodName        *string `json:"podName,omitempty"`
-	Operation      *string `json:"operation,omitempty"`
-	HasDbSpan      *bool   `json:"hasDbSpan,omitempty"`
-	HasAction      *bool   `json:"hasAction,omitempty"`
-	MinTotalTimeMs *int32  `json:"minTotalTimeMs,omitempty"`
-	MaxTotalTimeMs *int32  `json:"maxTotalTimeMs,omitempty"`
-	ResponseCode   *int32  `json:"responseCode,omitempty"`
-}
-
 type TraceHopEvent struct {
-	Method       *string `json:"method,omitempty"`
-	URL          *string `json:"url,omitempty"`
-	Host         *string `json:"host,omitempty"`
-	ResponseCode *int32  `json:"responseCode,omitempty"`
-	TookMs       *int32  `json:"tookMs,omitempty"`
+	Method *string `json:"method,omitempty"`
+	URL    *string `json:"url,omitempty"`
+	Host   *string `json:"host,omitempty"`
 }
 
 func (TraceHopEvent) IsTraceItemPayload() {}
+
+type TraceHopStopEvent struct {
+	ResponseCode *int32 `json:"responseCode,omitempty"`
+	TookMs       *int32 `json:"tookMs,omitempty"`
+}
+
+func (TraceHopStopEvent) IsTraceItemPayload() {}
 
 type TraceItem struct {
 	Timestamp    string           `json:"timestamp"`
@@ -140,12 +137,20 @@ type TraceItem struct {
 	ParentSpanID *string          `json:"parentSpanId,omitempty"`
 	PodName      *string          `json:"podName,omitempty"`
 	Namespace    *string          `json:"namespace,omitempty"`
-	Payload      TraceItemPayload `json:"payload"`
+	Payload      TraceItemPayload `json:"payload,omitempty"`
 }
 
 type TracePage struct {
-	Total int32    `json:"total"`
-	Items []*Trace `json:"items"`
+	Total int32           `json:"total"`
+	Items []*TraceSummary `json:"items"`
+}
+
+type TraceSearchInput struct {
+	Window              TraceWindow `json:"window"`
+	Limit               *int32      `json:"limit,omitempty"`
+	ResponseCode        *int32      `json:"responseCode,omitempty"`
+	TimeTookGreaterThan *int32      `json:"timeTookGreaterThan,omitempty"`
+	Operation           *string     `json:"operation,omitempty"`
 }
 
 type TraceStartEvent struct {
@@ -164,6 +169,18 @@ type TraceStopEvent struct {
 }
 
 func (TraceStopEvent) IsTraceItemPayload() {}
+
+type TraceSummary struct {
+	ID            string  `json:"id"`
+	IsActive      bool    `json:"isActive"`
+	HasDbSpan     bool    `json:"hasDbSpan"`
+	TimeStarted   *string `json:"timeStarted,omitempty"`
+	TimeEnded     *string `json:"timeEnded,omitempty"`
+	RootQuery     string  `json:"rootQuery"`
+	TotalTimeMs   int32   `json:"totalTimeMs"`
+	ResponseCode  int32   `json:"responseCode"`
+	NumberOfItems int32   `json:"numberOfItems"`
+}
 
 type MetricGroupBy string
 
@@ -398,12 +415,13 @@ func (e OrderDirection) MarshalJSON() ([]byte, error) {
 type TraceItemType string
 
 const (
-	TraceItemTypeTraceStart TraceItemType = "TRACE_START"
-	TraceItemTypeTraceHop   TraceItemType = "TRACE_HOP"
-	TraceItemTypeGraphql    TraceItemType = "GRAPHQL"
-	TraceItemTypeAction     TraceItemType = "ACTION"
-	TraceItemTypeDbSpan     TraceItemType = "DB_SPAN"
-	TraceItemTypeTraceStop  TraceItemType = "TRACE_STOP"
+	TraceItemTypeTraceStart   TraceItemType = "TRACE_START"
+	TraceItemTypeTraceHop     TraceItemType = "TRACE_HOP"
+	TraceItemTypeGraphql      TraceItemType = "GRAPHQL"
+	TraceItemTypeAction       TraceItemType = "ACTION"
+	TraceItemTypeDbSpan       TraceItemType = "DB_SPAN"
+	TraceItemTypeTraceStop    TraceItemType = "TRACE_STOP"
+	TraceItemTypeTraceHopStop TraceItemType = "TRACE_HOP_STOP"
 )
 
 var AllTraceItemType = []TraceItemType{
@@ -413,11 +431,12 @@ var AllTraceItemType = []TraceItemType{
 	TraceItemTypeAction,
 	TraceItemTypeDbSpan,
 	TraceItemTypeTraceStop,
+	TraceItemTypeTraceHopStop,
 }
 
 func (e TraceItemType) IsValid() bool {
 	switch e {
-	case TraceItemTypeTraceStart, TraceItemTypeTraceHop, TraceItemTypeGraphql, TraceItemTypeAction, TraceItemTypeDbSpan, TraceItemTypeTraceStop:
+	case TraceItemTypeTraceStart, TraceItemTypeTraceHop, TraceItemTypeGraphql, TraceItemTypeAction, TraceItemTypeDbSpan, TraceItemTypeTraceStop, TraceItemTypeTraceHopStop:
 		return true
 	}
 	return false
@@ -512,6 +531,71 @@ func (e *TraceOrderBy) UnmarshalJSON(b []byte) error {
 }
 
 func (e TraceOrderBy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TraceWindow string
+
+const (
+	TraceWindowM5  TraceWindow = "M5"
+	TraceWindowM10 TraceWindow = "M10"
+	TraceWindowM30 TraceWindow = "M30"
+	TraceWindowH1  TraceWindow = "H1"
+	TraceWindowH2  TraceWindow = "H2"
+	TraceWindowH12 TraceWindow = "H12"
+	TraceWindowH24 TraceWindow = "H24"
+)
+
+var AllTraceWindow = []TraceWindow{
+	TraceWindowM5,
+	TraceWindowM10,
+	TraceWindowM30,
+	TraceWindowH1,
+	TraceWindowH2,
+	TraceWindowH12,
+	TraceWindowH24,
+}
+
+func (e TraceWindow) IsValid() bool {
+	switch e {
+	case TraceWindowM5, TraceWindowM10, TraceWindowM30, TraceWindowH1, TraceWindowH2, TraceWindowH12, TraceWindowH24:
+		return true
+	}
+	return false
+}
+
+func (e TraceWindow) String() string {
+	return string(e)
+}
+
+func (e *TraceWindow) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TraceWindow(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TraceWindow", str)
+	}
+	return nil
+}
+
+func (e TraceWindow) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TraceWindow) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TraceWindow) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gorilla/mux"
+	"github.com/odysseia-greek/agora/plato/middleware"
 	"github.com/odysseia-greek/agora/plato/models"
 	"github.com/odysseia-greek/attike/euripides/gateway"
 	"github.com/odysseia-greek/attike/euripides/graph"
@@ -28,13 +29,23 @@ func InitRoutes(handlerConfig *gateway.EuripidesHandler) *mux.Router {
 	srv.AddTransport(transport.POST{})
 	srv.Use(extension.Introspection{})
 
-	serveMux.Handle("/euripides/graphql", srv)
+	adapters := []middleware.GraphqlAdapter{
+		middleware.LogGraphql(),
+	}
+
+	if handlerConfig.Environment == "romaioi" {
+		adapters = append(adapters, middleware.SetCorsHeadersLocal())
+	}
+
+	graphqlHandler := middleware.GraphqlAdapt(srv, adapters...)
+
+	serveMux.Handle("/euripides/graphql", graphqlHandler)
 
 	// --- health endpoints ---
 	serveMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeHealthResponse(w)
 	})
-	serveMux.HandleFunc("/euripides/v1/ping", func(w http.ResponseWriter, r *http.Request) {
+	serveMux.HandleFunc("/euripides/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		writeHealthResponse(w)
 	})
 

@@ -9,13 +9,15 @@ import (
 
 // TraceDoc is the top-level document for your "trace" index.
 type TraceDoc struct {
-	Items           []TraceItem      `json:"items,omitempty"` // nested in ES
-	IsActive        bool             `json:"isActive"`
-	TimeStarted     string           `json:"timeStarted"`
-	TimeEnded       *string          `json:"timeEnded,omitempty"`
-	TotalTime       int64            `json:"totalTime"`
-	ResponseCode    int16            `json:"responseCode"`
-	MetricsSnapshot *MetricsSnapshot `json:"metrics_snapshot,omitempty"`
+	Items          []TraceItem `json:"items,omitempty"` // nested in ES
+	IsActive       bool        `json:"isActive"`
+	TimeStarted    string      `json:"timeStarted"`
+	TimeEnded      *string     `json:"timeEnded,omitempty"`
+	TotalTime      int64       `json:"totalTime"`
+	ResponseCode   int16       `json:"responseCode"`
+	Operation      string      `json:"operation,omitempty"`
+	ContainsDBSpan bool        `json:"containsDBSpan"`
+	NumberOfItems  int32       `json:"numberOfItems"`
 }
 
 // TraceItem is stored inside TraceDoc.items (nested)
@@ -27,6 +29,18 @@ type TraceItem struct {
 	PodName      string          `json:"pod_name,omitempty"`
 	Namespace    string          `json:"namespace,omitempty"`
 	Payload      json.RawMessage `json:"payload,omitempty"` // JSON form of the protobuf event
+}
+
+type EnqueueTraceItem struct {
+	TraceID        string  `json:"traceID"`
+	IsActive       bool    `json:"isActive"`
+	TimeStarted    string  `json:"timeStarted"`
+	Operation      string  `json:"operation"`
+	TimeEnded      *string `json:"timeEnded,omitempty"`
+	TotalTime      int64   `json:"totalTime"`
+	ResponseCode   int16   `json:"responseCode"`
+	ContainsDBSpan bool    `json:"containsDBSpan"`
+	NumberOfItems  int32   `json:"numberOfItems"`
 }
 
 // ParseMetricSample parses the JSON payload inside Epistello.Data into a typed doc.

@@ -93,6 +93,7 @@ func NewGatherer() (*GathererImpl, error) {
 
 	metricsChannel := config.StringFromEnv("METRICS_CHANNEL", "sophokles")
 	traceChannel := config.StringFromEnv("TRACE_CHANNEL", "aristophanes")
+	reportChannel := config.StringFromEnv("REPORT_CHANNEL", "euripides")
 
 	return &GathererImpl{
 		MetricsIndex:       metricsIndex,
@@ -102,5 +103,6 @@ func NewGatherer() (*GathererImpl, error) {
 		Eupalinos:          queue,
 		TraceChannel:       traceChannel,
 		MetricsChannel:     metricsChannel,
+		ReportChannel:      reportChannel,
 	}, nil
 }

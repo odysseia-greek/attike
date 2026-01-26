@@ -96,7 +96,16 @@ func CreateNewConfig(ctx context.Context) (*EuripidesHandler, error) {
 
 	logging.Debug("queue healthy starting up")
 
-	traceIdChannel := config.StringFromEnv("TRACE_ID_CHANNEL", "euripides")
+	reportChannel := config.StringFromEnv("REPORT_CHANNEL", "euripides")
+
+	version := os.Getenv(config.EnvVersion)
+	env := os.Getenv(config.EnvKey)
+
+	traceCfg := TraceReportReaderConfig{
+		PollEvery:       10 * time.Second,
+		DequeueWait:     300 * time.Millisecond,
+		MaxDrainPerPoll: 5000,
+	}
 
 	elapsed := time.Since(start)
 
@@ -109,6 +118,8 @@ func CreateNewConfig(ctx context.Context) (*EuripidesHandler, error) {
 - Rollup Index: %s
 - Elastic Service: %s
 - ElasticHealth: %t
+- Version: %s
+- Environment: %s
 `,
 		elapsed,
 		eupalinosAddress,
@@ -118,6 +129,8 @@ func CreateNewConfig(ctx context.Context) (*EuripidesHandler, error) {
 		metricsRollupIndex,
 		elasticService,
 		elasticHealthy,
+		version,
+		env,
 	))
 
 	return &EuripidesHandler{
@@ -126,6 +139,9 @@ func CreateNewConfig(ctx context.Context) (*EuripidesHandler, error) {
 		TraceIndex:         traceIndex,
 		Elastic:            elastic,
 		Eupalinos:          queue,
-		TraceIdChannel:     traceIdChannel,
+		ReportChannel:      reportChannel,
+		Version:            version,
+		Environment:        env,
+		traceCfg:           traceCfg,
 	}, nil
 }

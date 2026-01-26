@@ -17,9 +17,15 @@ func (r *queryResolver) Trace(ctx context.Context, id string) (*model.Trace, err
 	return r.Handler.TraceById(ctx, id)
 }
 
-// Traces is the resolver for the traces field.
-func (r *queryResolver) Traces(ctx context.Context, rangeArg model.TimeRangeInput, filter *model.TraceFilterInput, orderBy *model.TraceOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) (*model.TracePage, error) {
-	panic(fmt.Errorf("not implemented: Traces - traces"))
+// TracePoll is the resolver for the tracePoll field.
+func (r *queryResolver) TracePoll(ctx context.Context, limit int32) (*model.EnqueueItems, error) {
+	limitAsInt := int(limit)
+	return r.Handler.TracePoll(ctx, &limitAsInt)
+}
+
+// TraceSearch is the resolver for the traceSearch field.
+func (r *queryResolver) TraceSearch(ctx context.Context, input model.TraceSearchInput) (*model.TracePage, error) {
+	return r.Handler.TraceSearch(ctx, &input)
 }
 
 // Metrics is the resolver for the metrics field.

@@ -36,10 +36,15 @@ func main() {
 
 	}
 
-	handler, err := gateway.CreateNewConfig(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	handler, err := gateway.CreateNewConfig(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	handler.StartTraceReportReader(ctx)
 
 	graphqlServer := routing.InitRoutes(handler)
 

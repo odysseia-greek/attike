@@ -1,85 +1,29 @@
 # getTraces.graphql
 query GetTraces($input: TraceQueryInput!) {
-	traces(input: $input) {
-		traceID
-		isActive
-		timeEnded
+	trace(input: $input) {
+		id
+		operation
+		podName
+		namespace
 		timeStarted
-		totalTime
-		responseCode
+		totalTimeMs
+		hasDbSpan
+		hasAction
 		items {
-			... on StartTrace {
-				parentSpanID
-				spanID
-				method
-				url
-				host
-				remoteAddress
-				timestamp
-				podName
-				namespace
-				itemType
-				operation
-				rootQuery
-				metrics {
-					cpuHumanReadable
-					memoryHumanReadable
-					cpuRaw
-					memoryRaw
-				}
-			}
-			... on CloseTrace {
-				parentSpanID
-				timestamp
-				podName
-				namespace
-				itemType
-				responseBody
-				metrics {
-					cpuHumanReadable
-					memoryHumanReadable
-					cpuRaw
-					memoryRaw
-				}
-			}
-			... on Trace {
-				parentSpanID
-				spanID
-				method
-				url
-				host
-				timestamp
-				podName
-				namespace
-				itemType
-				metrics {
-					cpuHumanReadable
-					memoryHumanReadable
-					cpuRaw
-					memoryRaw
-				}
-			}
-			... on Span {
-				parentSpanID
-				spanID
-				namespace
-				timestamp
-				podName
-				itemType
-				action
-				status
-				took
-			}
-			... on DatabaseSpan {
-				parentSpanID
-				spanID
-				itemType
-				query
-				namespace
-				timestamp
-				podName
-				took
-				hits
+			timestamp
+			itemType
+			podName
+			namespace
+			spanId
+			parentSpanId
+			payload {
+				... on DatabaseSpanEvent { action hits query tookMs }
+				... on ActionEvent { action status tookMs }
+				... on TraceHopEvent { method host url }
+				... on TraceStartEvent { operation url host remoteAddress rootQuery }
+				... on TraceStopEvent { responseBody }
+				... on GraphQLEvent { operation rootQuery }
+				... on TraceHopStopEvent { responseCode tookMs}
 			}
 		}
 	}

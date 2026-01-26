@@ -18,6 +18,7 @@ type GathererImpl struct {
 	Eupalinos      *stomion.QueueClient
 	TraceChannel   string
 	MetricsChannel string
+	ReportChannel  string
 
 	MetricCfg     MetricBulkConfig
 	metricCh      chan *pb.Epistello   // raw queue messages

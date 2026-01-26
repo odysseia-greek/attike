@@ -55,10 +55,13 @@ type ComplexityRoot struct {
 	DatabaseSpanEvent struct {
 		Action func(childComplexity int) int
 		Hits   func(childComplexity int) int
-		Index  func(childComplexity int) int
 		Query  func(childComplexity int) int
-		Target func(childComplexity int) int
 		TookMs func(childComplexity int) int
+	}
+
+	EnqueueItems struct {
+		Traces    func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
 	}
 
 	GraphQLEvent struct {
@@ -105,9 +108,10 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Metrics func(childComplexity int, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) int
-		Trace   func(childComplexity int, id string) int
-		Traces  func(childComplexity int, rangeArg model.TimeRangeInput, filter *model.TraceFilterInput, orderBy *model.TraceOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) int
+		Metrics     func(childComplexity int, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) int
+		Trace       func(childComplexity int, id string) int
+		TracePoll   func(childComplexity int, limit int32) int
+		TraceSearch func(childComplexity int, input model.TraceSearchInput) int
 	}
 
 	Trace struct {
@@ -126,11 +130,14 @@ type ComplexityRoot struct {
 	}
 
 	TraceHopEvent struct {
-		Host         func(childComplexity int) int
-		Method       func(childComplexity int) int
+		Host   func(childComplexity int) int
+		Method func(childComplexity int) int
+		URL    func(childComplexity int) int
+	}
+
+	TraceHopStopEvent struct {
 		ResponseCode func(childComplexity int) int
 		TookMs       func(childComplexity int) int
-		URL          func(childComplexity int) int
 	}
 
 	TraceItem struct {
@@ -160,11 +167,24 @@ type ComplexityRoot struct {
 	TraceStopEvent struct {
 		ResponseBody func(childComplexity int) int
 	}
+
+	TraceSummary struct {
+		HasDbSpan     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		IsActive      func(childComplexity int) int
+		NumberOfItems func(childComplexity int) int
+		ResponseCode  func(childComplexity int) int
+		RootQuery     func(childComplexity int) int
+		TimeEnded     func(childComplexity int) int
+		TimeStarted   func(childComplexity int) int
+		TotalTimeMs   func(childComplexity int) int
+	}
 }
 
 type QueryResolver interface {
 	Trace(ctx context.Context, id string) (*model.Trace, error)
-	Traces(ctx context.Context, rangeArg model.TimeRangeInput, filter *model.TraceFilterInput, orderBy *model.TraceOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) (*model.TracePage, error)
+	TracePoll(ctx context.Context, limit int32) (*model.EnqueueItems, error)
+	TraceSearch(ctx context.Context, input model.TraceSearchInput) (*model.TracePage, error)
 	Metrics(ctx context.Context, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) (*model.MetricSeriesPage, error)
 }
 
@@ -218,30 +238,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DatabaseSpanEvent.Hits(childComplexity), true
-	case "DatabaseSpanEvent.index":
-		if e.complexity.DatabaseSpanEvent.Index == nil {
-			break
-		}
-
-		return e.complexity.DatabaseSpanEvent.Index(childComplexity), true
 	case "DatabaseSpanEvent.query":
 		if e.complexity.DatabaseSpanEvent.Query == nil {
 			break
 		}
 
 		return e.complexity.DatabaseSpanEvent.Query(childComplexity), true
-	case "DatabaseSpanEvent.target":
-		if e.complexity.DatabaseSpanEvent.Target == nil {
-			break
-		}
-
-		return e.complexity.DatabaseSpanEvent.Target(childComplexity), true
 	case "DatabaseSpanEvent.tookMs":
 		if e.complexity.DatabaseSpanEvent.TookMs == nil {
 			break
 		}
 
 		return e.complexity.DatabaseSpanEvent.TookMs(childComplexity), true
+
+	case "EnqueueItems.traces":
+		if e.complexity.EnqueueItems.Traces == nil {
+			break
+		}
+
+		return e.complexity.EnqueueItems.Traces(childComplexity), true
+	case "EnqueueItems.updatedAt":
+		if e.complexity.EnqueueItems.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.EnqueueItems.UpdatedAt(childComplexity), true
 
 	case "GraphQLEvent.operation":
 		if e.complexity.GraphQLEvent.Operation == nil {
@@ -421,17 +442,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Trace(childComplexity, args["id"].(string)), true
-	case "Query.traces":
-		if e.complexity.Query.Traces == nil {
+	case "Query.tracePoll":
+		if e.complexity.Query.TracePoll == nil {
 			break
 		}
 
-		args, err := ec.field_Query_traces_args(ctx, rawArgs)
+		args, err := ec.field_Query_tracePoll_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.Traces(childComplexity, args["range"].(model.TimeRangeInput), args["filter"].(*model.TraceFilterInput), args["orderBy"].(*model.TraceOrderBy), args["orderDir"].(*model.OrderDirection), args["page"].(*model.PaginationInput)), true
+		return e.complexity.Query.TracePoll(childComplexity, args["limit"].(int32)), true
+	case "Query.traceSearch":
+		if e.complexity.Query.TraceSearch == nil {
+			break
+		}
+
+		args, err := ec.field_Query_traceSearch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TraceSearch(childComplexity, args["input"].(model.TraceSearchInput)), true
 
 	case "Trace.hasAction":
 		if e.complexity.Trace.HasAction == nil {
@@ -518,24 +550,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TraceHopEvent.Method(childComplexity), true
-	case "TraceHopEvent.responseCode":
-		if e.complexity.TraceHopEvent.ResponseCode == nil {
-			break
-		}
-
-		return e.complexity.TraceHopEvent.ResponseCode(childComplexity), true
-	case "TraceHopEvent.tookMs":
-		if e.complexity.TraceHopEvent.TookMs == nil {
-			break
-		}
-
-		return e.complexity.TraceHopEvent.TookMs(childComplexity), true
 	case "TraceHopEvent.url":
 		if e.complexity.TraceHopEvent.URL == nil {
 			break
 		}
 
 		return e.complexity.TraceHopEvent.URL(childComplexity), true
+
+	case "TraceHopStopEvent.responseCode":
+		if e.complexity.TraceHopStopEvent.ResponseCode == nil {
+			break
+		}
+
+		return e.complexity.TraceHopStopEvent.ResponseCode(childComplexity), true
+	case "TraceHopStopEvent.tookMs":
+		if e.complexity.TraceHopStopEvent.TookMs == nil {
+			break
+		}
+
+		return e.complexity.TraceHopStopEvent.TookMs(childComplexity), true
 
 	case "TraceItem.itemType":
 		if e.complexity.TraceItem.ItemType == nil {
@@ -637,6 +670,61 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TraceStopEvent.ResponseBody(childComplexity), true
 
+	case "TraceSummary.hasDbSpan":
+		if e.complexity.TraceSummary.HasDbSpan == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.HasDbSpan(childComplexity), true
+	case "TraceSummary.id":
+		if e.complexity.TraceSummary.ID == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.ID(childComplexity), true
+	case "TraceSummary.isActive":
+		if e.complexity.TraceSummary.IsActive == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.IsActive(childComplexity), true
+	case "TraceSummary.numberOfItems":
+		if e.complexity.TraceSummary.NumberOfItems == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.NumberOfItems(childComplexity), true
+	case "TraceSummary.responseCode":
+		if e.complexity.TraceSummary.ResponseCode == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.ResponseCode(childComplexity), true
+	case "TraceSummary.rootQuery":
+		if e.complexity.TraceSummary.RootQuery == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.RootQuery(childComplexity), true
+	case "TraceSummary.timeEnded":
+		if e.complexity.TraceSummary.TimeEnded == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.TimeEnded(childComplexity), true
+	case "TraceSummary.timeStarted":
+		if e.complexity.TraceSummary.TimeStarted == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.TimeStarted(childComplexity), true
+	case "TraceSummary.totalTimeMs":
+		if e.complexity.TraceSummary.TotalTimeMs == nil {
+			break
+		}
+
+		return e.complexity.TraceSummary.TotalTimeMs(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -648,7 +736,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputMetricScopeInput,
 		ec.unmarshalInputPaginationInput,
 		ec.unmarshalInputTimeRangeInput,
-		ec.unmarshalInputTraceFilterInput,
+		ec.unmarshalInputTraceSearchInput,
 	)
 	first := true
 
@@ -802,6 +890,28 @@ func (ec *executionContext) field_Query_metrics_args(ctx context.Context, rawArg
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_tracePoll_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_traceSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNTraceSearchInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSearchInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_trace_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -810,37 +920,6 @@ func (ec *executionContext) field_Query_trace_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_traces_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "range", ec.unmarshalNTimeRangeInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTimeRangeInput)
-	if err != nil {
-		return nil, err
-	}
-	args["range"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOTraceFilterInput2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceFilterInput)
-	if err != nil {
-		return nil, err
-	}
-	args["filter"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalOTraceOrderBy2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceOrderBy)
-	if err != nil {
-		return nil, err
-	}
-	args["orderBy"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "orderDir", ec.unmarshalOOrderDirection2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐOrderDirection)
-	if err != nil {
-		return nil, err
-	}
-	args["orderDir"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐPaginationInput)
-	if err != nil {
-		return nil, err
-	}
-	args["page"] = arg4
 	return args, nil
 }
 
@@ -1099,59 +1178,79 @@ func (ec *executionContext) fieldContext_DatabaseSpanEvent_tookMs(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _DatabaseSpanEvent_target(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseSpanEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _EnqueueItems_traces(ctx context.Context, field graphql.CollectedField, obj *model.EnqueueItems) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_DatabaseSpanEvent_target,
+		ec.fieldContext_EnqueueItems_traces,
 		func(ctx context.Context) (any, error) {
-			return obj.Target, nil
+			return obj.Traces, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNTraceSummary2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSummaryᚄ,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_DatabaseSpanEvent_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EnqueueItems_traces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "DatabaseSpanEvent",
+		Object:     "EnqueueItems",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TraceSummary_id(ctx, field)
+			case "isActive":
+				return ec.fieldContext_TraceSummary_isActive(ctx, field)
+			case "hasDbSpan":
+				return ec.fieldContext_TraceSummary_hasDbSpan(ctx, field)
+			case "timeStarted":
+				return ec.fieldContext_TraceSummary_timeStarted(ctx, field)
+			case "timeEnded":
+				return ec.fieldContext_TraceSummary_timeEnded(ctx, field)
+			case "rootQuery":
+				return ec.fieldContext_TraceSummary_rootQuery(ctx, field)
+			case "totalTimeMs":
+				return ec.fieldContext_TraceSummary_totalTimeMs(ctx, field)
+			case "responseCode":
+				return ec.fieldContext_TraceSummary_responseCode(ctx, field)
+			case "numberOfItems":
+				return ec.fieldContext_TraceSummary_numberOfItems(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TraceSummary", field.Name)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _DatabaseSpanEvent_index(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseSpanEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _EnqueueItems_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.EnqueueItems) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_DatabaseSpanEvent_index,
+		ec.fieldContext_EnqueueItems_updatedAt,
 		func(ctx context.Context) (any, error) {
-			return obj.Index, nil
+			return obj.UpdatedAt, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNDateTime2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_DatabaseSpanEvent_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EnqueueItems_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "DatabaseSpanEvent",
+		Object:     "EnqueueItems",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1999,15 +2098,62 @@ func (ec *executionContext) fieldContext_Query_trace(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_traces(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_tracePoll(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_traces,
+		ec.fieldContext_Query_tracePoll,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Traces(ctx, fc.Args["range"].(model.TimeRangeInput), fc.Args["filter"].(*model.TraceFilterInput), fc.Args["orderBy"].(*model.TraceOrderBy), fc.Args["orderDir"].(*model.OrderDirection), fc.Args["page"].(*model.PaginationInput))
+			return ec.resolvers.Query().TracePoll(ctx, fc.Args["limit"].(int32))
+		},
+		nil,
+		ec.marshalOEnqueueItems2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐEnqueueItems,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_tracePoll(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "traces":
+				return ec.fieldContext_EnqueueItems_traces(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_EnqueueItems_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type EnqueueItems", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_tracePoll_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_traceSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_traceSearch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().TraceSearch(ctx, fc.Args["input"].(model.TraceSearchInput))
 		},
 		nil,
 		ec.marshalNTracePage2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTracePage,
@@ -2016,7 +2162,7 @@ func (ec *executionContext) _Query_traces(ctx context.Context, field graphql.Col
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_traces(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_traceSearch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -2039,7 +2185,7 @@ func (ec *executionContext) fieldContext_Query_traces(ctx context.Context, field
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_traces_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_traceSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2652,12 +2798,12 @@ func (ec *executionContext) fieldContext_TraceHopEvent_host(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _TraceHopEvent_responseCode(ctx context.Context, field graphql.CollectedField, obj *model.TraceHopEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _TraceHopStopEvent_responseCode(ctx context.Context, field graphql.CollectedField, obj *model.TraceHopStopEvent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_TraceHopEvent_responseCode,
+		ec.fieldContext_TraceHopStopEvent_responseCode,
 		func(ctx context.Context) (any, error) {
 			return obj.ResponseCode, nil
 		},
@@ -2668,9 +2814,9 @@ func (ec *executionContext) _TraceHopEvent_responseCode(ctx context.Context, fie
 	)
 }
 
-func (ec *executionContext) fieldContext_TraceHopEvent_responseCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TraceHopStopEvent_responseCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "TraceHopEvent",
+		Object:     "TraceHopStopEvent",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2681,12 +2827,12 @@ func (ec *executionContext) fieldContext_TraceHopEvent_responseCode(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _TraceHopEvent_tookMs(ctx context.Context, field graphql.CollectedField, obj *model.TraceHopEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _TraceHopStopEvent_tookMs(ctx context.Context, field graphql.CollectedField, obj *model.TraceHopStopEvent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_TraceHopEvent_tookMs,
+		ec.fieldContext_TraceHopStopEvent_tookMs,
 		func(ctx context.Context) (any, error) {
 			return obj.TookMs, nil
 		},
@@ -2697,9 +2843,9 @@ func (ec *executionContext) _TraceHopEvent_tookMs(ctx context.Context, field gra
 	)
 }
 
-func (ec *executionContext) fieldContext_TraceHopEvent_tookMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TraceHopStopEvent_tookMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "TraceHopEvent",
+		Object:     "TraceHopStopEvent",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2894,9 +3040,9 @@ func (ec *executionContext) _TraceItem_payload(ctx context.Context, field graphq
 			return obj.Payload, nil
 		},
 		nil,
-		ec.marshalNTraceItemPayload2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemPayload,
+		ec.marshalOTraceItemPayload2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemPayload,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -2952,7 +3098,7 @@ func (ec *executionContext) _TracePage_items(ctx context.Context, field graphql.
 			return obj.Items, nil
 		},
 		nil,
-		ec.marshalNTrace2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceᚄ,
+		ec.marshalNTraceSummary2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSummaryᚄ,
 		true,
 		true,
 	)
@@ -2967,31 +3113,25 @@ func (ec *executionContext) fieldContext_TracePage_items(_ context.Context, fiel
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Trace_id(ctx, field)
+				return ec.fieldContext_TraceSummary_id(ctx, field)
 			case "isActive":
-				return ec.fieldContext_Trace_isActive(ctx, field)
-			case "timeStarted":
-				return ec.fieldContext_Trace_timeStarted(ctx, field)
-			case "timeEnded":
-				return ec.fieldContext_Trace_timeEnded(ctx, field)
-			case "totalTimeMs":
-				return ec.fieldContext_Trace_totalTimeMs(ctx, field)
-			case "responseCode":
-				return ec.fieldContext_Trace_responseCode(ctx, field)
-			case "namespace":
-				return ec.fieldContext_Trace_namespace(ctx, field)
-			case "podName":
-				return ec.fieldContext_Trace_podName(ctx, field)
-			case "operation":
-				return ec.fieldContext_Trace_operation(ctx, field)
+				return ec.fieldContext_TraceSummary_isActive(ctx, field)
 			case "hasDbSpan":
-				return ec.fieldContext_Trace_hasDbSpan(ctx, field)
-			case "hasAction":
-				return ec.fieldContext_Trace_hasAction(ctx, field)
-			case "items":
-				return ec.fieldContext_Trace_items(ctx, field)
+				return ec.fieldContext_TraceSummary_hasDbSpan(ctx, field)
+			case "timeStarted":
+				return ec.fieldContext_TraceSummary_timeStarted(ctx, field)
+			case "timeEnded":
+				return ec.fieldContext_TraceSummary_timeEnded(ctx, field)
+			case "rootQuery":
+				return ec.fieldContext_TraceSummary_rootQuery(ctx, field)
+			case "totalTimeMs":
+				return ec.fieldContext_TraceSummary_totalTimeMs(ctx, field)
+			case "responseCode":
+				return ec.fieldContext_TraceSummary_responseCode(ctx, field)
+			case "numberOfItems":
+				return ec.fieldContext_TraceSummary_numberOfItems(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Trace", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type TraceSummary", field.Name)
 		},
 	}
 	return fc, nil
@@ -3195,6 +3335,267 @@ func (ec *executionContext) fieldContext_TraceStopEvent_responseBody(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_id(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_isActive(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_isActive,
+		func(ctx context.Context) (any, error) {
+			return obj.IsActive, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_isActive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_hasDbSpan(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_hasDbSpan,
+		func(ctx context.Context) (any, error) {
+			return obj.HasDbSpan, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_hasDbSpan(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_timeStarted(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_timeStarted,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeStarted, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_timeStarted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_timeEnded(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_timeEnded,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeEnded, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_timeEnded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_rootQuery(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_rootQuery,
+		func(ctx context.Context) (any, error) {
+			return obj.RootQuery, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_rootQuery(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_totalTimeMs(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_totalTimeMs,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalTimeMs, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_totalTimeMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_responseCode(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_responseCode,
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseCode, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_responseCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TraceSummary_numberOfItems(ctx context.Context, field graphql.CollectedField, obj *model.TraceSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TraceSummary_numberOfItems,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberOfItems, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TraceSummary_numberOfItems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TraceSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4769,69 +5170,38 @@ func (ec *executionContext) unmarshalInputTimeRangeInput(ctx context.Context, ob
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputTraceFilterInput(ctx context.Context, obj any) (model.TraceFilterInput, error) {
-	var it model.TraceFilterInput
+func (ec *executionContext) unmarshalInputTraceSearchInput(ctx context.Context, obj any) (model.TraceSearchInput, error) {
+	var it model.TraceSearchInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"namespace", "podName", "operation", "hasDbSpan", "hasAction", "minTotalTimeMs", "maxTotalTimeMs", "responseCode"}
+	if _, present := asMap["limit"]; !present {
+		asMap["limit"] = 50
+	}
+
+	fieldsInOrder := [...]string{"window", "limit", "responseCode", "timeTookGreaterThan", "operation"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "namespace":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+		case "window":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("window"))
+			data, err := ec.unmarshalNTraceWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceWindow(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Namespace = data
-		case "podName":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podName"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PodName = data
-		case "operation":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operation"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Operation = data
-		case "hasDbSpan":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasDbSpan"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasDbSpan = data
-		case "hasAction":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAction"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasAction = data
-		case "minTotalTimeMs":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minTotalTimeMs"))
+			it.Window = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.MinTotalTimeMs = data
-		case "maxTotalTimeMs":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxTotalTimeMs"))
-			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxTotalTimeMs = data
+			it.Limit = data
 		case "responseCode":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("responseCode"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
@@ -4839,6 +5209,20 @@ func (ec *executionContext) unmarshalInputTraceFilterInput(ctx context.Context, 
 				return it, err
 			}
 			it.ResponseCode = data
+		case "timeTookGreaterThan":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeTookGreaterThan"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TimeTookGreaterThan = data
+		case "operation":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operation"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Operation = data
 		}
 	}
 
@@ -4867,6 +5251,13 @@ func (ec *executionContext) _TraceItemPayload(ctx context.Context, sel ast.Selec
 			return graphql.Null
 		}
 		return ec._TraceStartEvent(ctx, sel, obj)
+	case model.TraceHopStopEvent:
+		return ec._TraceHopStopEvent(ctx, sel, &obj)
+	case *model.TraceHopStopEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TraceHopStopEvent(ctx, sel, obj)
 	case model.TraceHopEvent:
 		return ec._TraceHopEvent(ctx, sel, &obj)
 	case *model.TraceHopEvent:
@@ -4967,10 +5358,50 @@ func (ec *executionContext) _DatabaseSpanEvent(ctx context.Context, sel ast.Sele
 			out.Values[i] = ec._DatabaseSpanEvent_hits(ctx, field, obj)
 		case "tookMs":
 			out.Values[i] = ec._DatabaseSpanEvent_tookMs(ctx, field, obj)
-		case "target":
-			out.Values[i] = ec._DatabaseSpanEvent_target(ctx, field, obj)
-		case "index":
-			out.Values[i] = ec._DatabaseSpanEvent_index(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var enqueueItemsImplementors = []string{"EnqueueItems"}
+
+func (ec *executionContext) _EnqueueItems(ctx context.Context, sel ast.SelectionSet, obj *model.EnqueueItems) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, enqueueItemsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EnqueueItems")
+		case "traces":
+			out.Values[i] = ec._EnqueueItems_traces(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._EnqueueItems_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5301,7 +5732,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "traces":
+		case "tracePoll":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tracePoll(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "traceSearch":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -5310,7 +5760,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_traces(ctx, field)
+				res = ec._Query_traceSearch(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -5475,10 +5925,44 @@ func (ec *executionContext) _TraceHopEvent(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._TraceHopEvent_url(ctx, field, obj)
 		case "host":
 			out.Values[i] = ec._TraceHopEvent_host(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var traceHopStopEventImplementors = []string{"TraceHopStopEvent", "TraceItemPayload"}
+
+func (ec *executionContext) _TraceHopStopEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TraceHopStopEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, traceHopStopEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TraceHopStopEvent")
 		case "responseCode":
-			out.Values[i] = ec._TraceHopEvent_responseCode(ctx, field, obj)
+			out.Values[i] = ec._TraceHopStopEvent_responseCode(ctx, field, obj)
 		case "tookMs":
-			out.Values[i] = ec._TraceHopEvent_tookMs(ctx, field, obj)
+			out.Values[i] = ec._TraceHopStopEvent_tookMs(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5533,9 +6017,6 @@ func (ec *executionContext) _TraceItem(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._TraceItem_namespace(ctx, field, obj)
 		case "payload":
 			out.Values[i] = ec._TraceItem_payload(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5662,6 +6143,79 @@ func (ec *executionContext) _TraceStopEvent(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("TraceStopEvent")
 		case "responseBody":
 			out.Values[i] = ec._TraceStopEvent_responseBody(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var traceSummaryImplementors = []string{"TraceSummary"}
+
+func (ec *executionContext) _TraceSummary(ctx context.Context, sel ast.SelectionSet, obj *model.TraceSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, traceSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TraceSummary")
+		case "id":
+			out.Values[i] = ec._TraceSummary_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isActive":
+			out.Values[i] = ec._TraceSummary_isActive(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hasDbSpan":
+			out.Values[i] = ec._TraceSummary_hasDbSpan(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "timeStarted":
+			out.Values[i] = ec._TraceSummary_timeStarted(ctx, field, obj)
+		case "timeEnded":
+			out.Values[i] = ec._TraceSummary_timeEnded(ctx, field, obj)
+		case "rootQuery":
+			out.Values[i] = ec._TraceSummary_rootQuery(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalTimeMs":
+			out.Values[i] = ec._TraceSummary_totalTimeMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "responseCode":
+			out.Values[i] = ec._TraceSummary_responseCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "numberOfItems":
+			out.Values[i] = ec._TraceSummary_numberOfItems(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6237,60 +6791,6 @@ func (ec *executionContext) unmarshalNTimeRangeInput2githubᚗcomᚋodysseiaᚑg
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNTrace2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Trace) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNTrace2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTrace(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNTrace2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTrace(ctx context.Context, sel ast.SelectionSet, v *model.Trace) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Trace(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNTraceItem2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TraceItem) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6345,16 +6845,6 @@ func (ec *executionContext) marshalNTraceItem2ᚖgithubᚗcomᚋodysseiaᚑgreek
 	return ec._TraceItem(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTraceItemPayload2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemPayload(ctx context.Context, sel ast.SelectionSet, v model.TraceItemPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._TraceItemPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNTraceItemType2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemType(ctx context.Context, v any) (model.TraceItemType, error) {
 	var res model.TraceItemType
 	err := res.UnmarshalGQL(v)
@@ -6377,6 +6867,75 @@ func (ec *executionContext) marshalNTracePage2ᚖgithubᚗcomᚋodysseiaᚑgreek
 		return graphql.Null
 	}
 	return ec._TracePage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTraceSearchInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSearchInput(ctx context.Context, v any) (model.TraceSearchInput, error) {
+	res, err := ec.unmarshalInputTraceSearchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTraceSummary2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSummaryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TraceSummary) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTraceSummary2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSummary(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTraceSummary2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceSummary(ctx context.Context, sel ast.SelectionSet, v *model.TraceSummary) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TraceSummary(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTraceWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceWindow(ctx context.Context, v any) (model.TraceWindow, error) {
+	var res model.TraceWindow
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTraceWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceWindow(ctx context.Context, sel ast.SelectionSet, v model.TraceWindow) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -6680,6 +7239,13 @@ func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel 
 	return res
 }
 
+func (ec *executionContext) marshalOEnqueueItems2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐEnqueueItems(ctx context.Context, sel ast.SelectionSet, v *model.EnqueueItems) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._EnqueueItems(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
 	if v == nil {
 		return nil, nil
@@ -6827,28 +7393,11 @@ func (ec *executionContext) marshalOTrace2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋa
 	return ec._Trace(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOTraceFilterInput2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceFilterInput(ctx context.Context, v any) (*model.TraceFilterInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputTraceFilterInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOTraceOrderBy2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceOrderBy(ctx context.Context, v any) (*model.TraceOrderBy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.TraceOrderBy)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOTraceOrderBy2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceOrderBy(ctx context.Context, sel ast.SelectionSet, v *model.TraceOrderBy) graphql.Marshaler {
+func (ec *executionContext) marshalOTraceItemPayload2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐTraceItemPayload(ctx context.Context, sel ast.SelectionSet, v model.TraceItemPayload) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return v
+	return ec._TraceItemPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

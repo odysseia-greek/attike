@@ -86,6 +86,9 @@ func (a *AnaximenesHandler) createTraceIndexMapping(policyName string) map[strin
 				"isActive": map[string]interface{}{
 					"type": "boolean",
 				},
+				"operation": map[string]interface{}{
+					"type": "keyword",
+				},
 				"timeStarted": map[string]interface{}{
 					"type":   "date",
 					"format": "yyyy-MM-dd'T'HH:mm:ss.SSS",
