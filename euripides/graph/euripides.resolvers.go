@@ -28,6 +28,16 @@ func (r *queryResolver) TraceSearch(ctx context.Context, input model.TraceSearch
 	return r.Handler.TraceSearch(ctx, &input)
 }
 
+// MetricsRaw is the resolver for the metricsRaw field.
+func (r *queryResolver) MetricsRaw(ctx context.Context, input model.RawMetricsInput) (*model.MetricSeriesPage, error) {
+	panic(fmt.Errorf("not implemented: MetricsRaw - metricsRaw"))
+}
+
+// MetricsSummary is the resolver for the metricsSummary field.
+func (r *queryResolver) MetricsSummary(ctx context.Context, input model.MetricsSummaryInput) (*model.MetricsSummary, error) {
+	return r.Handler.MetricsSummary(ctx, &input)
+}
+
 // Metrics is the resolver for the metrics field.
 func (r *queryResolver) Metrics(ctx context.Context, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) (*model.MetricSeriesPage, error) {
 	panic(fmt.Errorf("not implemented: Metrics - metrics"))

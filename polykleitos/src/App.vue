@@ -40,11 +40,16 @@ onMounted(() => {
   }, 30000); // 30 seconds
 });
 
-const scrollToSearch = () => {
+const scrollToTraces = () => {
   const searchSection = document.getElementById('search-section');
   if (searchSection) {
     searchSection.scrollIntoView({ behavior: 'smooth' });
   }
+};
+
+const scrollToMetrics = () => {
+  const el = document.getElementById("metrics-section");
+  if (el) el.scrollIntoView({ behavior: "smooth" });
 };
 </script>
 
@@ -52,11 +57,11 @@ const scrollToSearch = () => {
   <v-app id="polykleitos">
     <v-app-bar floating color="footer">
       <v-app-bar-title>Polykleitos</v-app-bar-title>
-      <v-btn variant="text" @click="scrollToSearch">
+      <v-btn variant="text" @click="scrollToTraces">
         <v-icon>mdi-graph</v-icon>
         Traces
       </v-btn>
-      <v-btn variant="text" @click="scrollToSearch">
+      <v-btn variant="text" @click="scrollToMetrics">
         <v-icon>mdi-chart-bar</v-icon>
         Metrics
       </v-btn>

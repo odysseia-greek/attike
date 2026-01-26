@@ -43,6 +43,37 @@
           </v-card-text>
         </v-card>
 
+        <!-- Search (no prefetch; only query on submit) -->
+        <v-card class="paper-card-light" rounded="lg">
+          <v-card-text>
+            <v-row align="center">
+              <v-col cols="12" md="9">
+                <v-autocomplete
+                    v-model="search"
+                    :items="searchHistory"
+                    :loading="loading"
+                    label="Trace ID"
+                    placeholder="424ea68f-28a6-412a-bd47-2d05bf6fdf8d"
+                    prepend-inner-icon="mdi-magnify"
+                    clearable
+                    hide-no-data
+                    @keyup.enter="runSearch(search)"
+                    @update:modelValue="onSelectFromHistory"
+                />
+              </v-col>
+
+              <v-col cols="12" md="3">
+                <v-btn color="primary" block :loading="loading" @click="runSearch(search)">
+                  Search
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <v-alert v-if="errorText" type="warning" class="mt-3" rounded="lg">
+              {{ errorText }}
+            </v-alert>
+          </v-card-text>
+        </v-card>
 
         <!-- ES searched Traces -->
         <v-card class="paper-card-light mt-6" rounded="lg" elevation="6">
@@ -201,37 +232,6 @@
           </v-card-text>
         </v-card>
 
-    <!-- Search (no prefetch; only query on submit) -->
-    <v-card class="paper-card-light" rounded="lg">
-      <v-card-text>
-        <v-row align="center">
-          <v-col cols="12" md="9">
-            <v-autocomplete
-                v-model="search"
-                :items="searchHistory"
-                :loading="loading"
-                label="Trace ID"
-                placeholder="424ea68f-28a6-412a-bd47-2d05bf6fdf8d"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                hide-no-data
-                @keyup.enter="runSearch(search)"
-                @update:modelValue="onSelectFromHistory"
-            />
-          </v-col>
-
-          <v-col cols="12" md="3">
-            <v-btn color="primary" block :loading="loading" @click="runSearch(search)">
-              Search
-            </v-btn>
-          </v-col>
-        </v-row>
-
-        <v-alert v-if="errorText" type="warning" class="mt-3" rounded="lg">
-          {{ errorText }}
-        </v-alert>
-      </v-card-text>
-    </v-card>
 
     <!-- Errors from backend -->
     <v-alert v-if="queryError" type="error" class="mb-6" rounded="lg">
@@ -244,7 +244,7 @@
     </v-alert>
 
     <!-- Trace -->
-    <v-card class="paper-card-report" v-if="trace" rounded="lg" elevation="6">
+    <v-card class="paper-card-report" v-if="trace" rounded="lg" elevation="6"  id="summary-section">
       <v-card-title>Trace Summary</v-card-title>
 
       <v-card-text>
@@ -286,6 +286,8 @@
 
         </v-card-text>
         </v-card>
+
+        <MetricsSummaryPanel />
       </v-container>
     </v-container>
     </v-app>
@@ -301,6 +303,7 @@ import { TraceSearchQuery } from "../constants/traceSearch.js";
 import JsonViewer from "@/components/JSONViewWrapper.vue";
 import TraceMermaid from "@/components/TraceMermaidState.vue";
 import TraceGantt from "@/components/TraceMermaidGantt.vue";
+import MetricsSummaryPanel from "@/components/MetricsSummaryPanel.vue";
 
 const search = ref("");               // current input / selection
 const searchHistory = ref([]);        // string[] of trace IDs
@@ -492,6 +495,8 @@ const runSearch = async (id) => {
   lastSearchedId.value = v;
   addToHistory(v);
 
+  scrollToSummary()
+
   // triggers the query (first time) and refetches (subsequent times)
   await load();
 };
@@ -555,6 +560,13 @@ const scrollToSearch = () => {
   const searchSection = document.getElementById('search-section');
   if (searchSection) {
     searchSection.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
+const scrollToSummary = () => {
+  const summarySection = document.getElementById('summary-section');
+  if (summarySection) {
+    summarySection.scrollIntoView({ behavior: 'smooth' });
   }
 };
 

@@ -107,11 +107,77 @@ type ComplexityRoot struct {
 		WindowSamples func(childComplexity int) int
 	}
 
+	MetricStats struct {
+		Avg           func(childComplexity int) int
+		AvgHuman      func(childComplexity int) int
+		Max           func(childComplexity int) int
+		MaxHuman      func(childComplexity int) int
+		P95           func(childComplexity int) int
+		P95Human      func(childComplexity int) int
+		TotalMax      func(childComplexity int) int
+		TotalMaxHuman func(childComplexity int) int
+	}
+
+	MetricsGroupNamespace struct {
+		Items func(childComplexity int) int
+		Total func(childComplexity int) int
+	}
+
+	MetricsGroupNode struct {
+		Items func(childComplexity int) int
+		Total func(childComplexity int) int
+	}
+
+	MetricsGroupPod struct {
+		Items func(childComplexity int) int
+		Total func(childComplexity int) int
+	}
+
+	MetricsSummary struct {
+		End        func(childComplexity int) int
+		Namespaces func(childComplexity int) int
+		Nodes      func(childComplexity int) int
+		Pods       func(childComplexity int) int
+		Start      func(childComplexity int) int
+		Window     func(childComplexity int) int
+	}
+
+	NamespaceMetricsAgg struct {
+		CPU         func(childComplexity int) int
+		DocCount    func(childComplexity int) int
+		Mem         func(childComplexity int) int
+		Namespace   func(childComplexity int) int
+		SampleCount func(childComplexity int) int
+		SortKey     func(childComplexity int) int
+	}
+
+	NodeMetricsAgg struct {
+		CPU         func(childComplexity int) int
+		DocCount    func(childComplexity int) int
+		Mem         func(childComplexity int) int
+		Node        func(childComplexity int) int
+		SampleCount func(childComplexity int) int
+		SortKey     func(childComplexity int) int
+	}
+
+	PodMetricsAgg struct {
+		CPU         func(childComplexity int) int
+		DocCount    func(childComplexity int) int
+		Mem         func(childComplexity int) int
+		Namespace   func(childComplexity int) int
+		Node        func(childComplexity int) int
+		PodName     func(childComplexity int) int
+		SampleCount func(childComplexity int) int
+		SortKey     func(childComplexity int) int
+	}
+
 	Query struct {
-		Metrics     func(childComplexity int, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) int
-		Trace       func(childComplexity int, id string) int
-		TracePoll   func(childComplexity int, limit int32) int
-		TraceSearch func(childComplexity int, input model.TraceSearchInput) int
+		Metrics        func(childComplexity int, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) int
+		MetricsRaw     func(childComplexity int, input model.RawMetricsInput) int
+		MetricsSummary func(childComplexity int, input model.MetricsSummaryInput) int
+		Trace          func(childComplexity int, id string) int
+		TracePoll      func(childComplexity int, limit int32) int
+		TraceSearch    func(childComplexity int, input model.TraceSearchInput) int
 	}
 
 	Trace struct {
@@ -185,6 +251,8 @@ type QueryResolver interface {
 	Trace(ctx context.Context, id string) (*model.Trace, error)
 	TracePoll(ctx context.Context, limit int32) (*model.EnqueueItems, error)
 	TraceSearch(ctx context.Context, input model.TraceSearchInput) (*model.TracePage, error)
+	MetricsRaw(ctx context.Context, input model.RawMetricsInput) (*model.MetricSeriesPage, error)
+	MetricsSummary(ctx context.Context, input model.MetricsSummaryInput) (*model.MetricsSummary, error)
 	Metrics(ctx context.Context, rangeArg model.TimeRangeInput, scope *model.MetricScopeInput, resolution *model.MetricResolution, groupBy *model.MetricGroupBy, orderBy *model.MetricOrderBy, orderDir *model.OrderDirection, page *model.PaginationInput) (*model.MetricSeriesPage, error)
 }
 
@@ -420,6 +488,254 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MetricSource.WindowSamples(childComplexity), true
 
+	case "MetricStats.avg":
+		if e.complexity.MetricStats.Avg == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.Avg(childComplexity), true
+	case "MetricStats.avgHuman":
+		if e.complexity.MetricStats.AvgHuman == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.AvgHuman(childComplexity), true
+	case "MetricStats.max":
+		if e.complexity.MetricStats.Max == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.Max(childComplexity), true
+	case "MetricStats.maxHuman":
+		if e.complexity.MetricStats.MaxHuman == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.MaxHuman(childComplexity), true
+	case "MetricStats.p95":
+		if e.complexity.MetricStats.P95 == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.P95(childComplexity), true
+	case "MetricStats.p95Human":
+		if e.complexity.MetricStats.P95Human == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.P95Human(childComplexity), true
+	case "MetricStats.totalMax":
+		if e.complexity.MetricStats.TotalMax == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.TotalMax(childComplexity), true
+	case "MetricStats.totalMaxHuman":
+		if e.complexity.MetricStats.TotalMaxHuman == nil {
+			break
+		}
+
+		return e.complexity.MetricStats.TotalMaxHuman(childComplexity), true
+
+	case "MetricsGroupNamespace.items":
+		if e.complexity.MetricsGroupNamespace.Items == nil {
+			break
+		}
+
+		return e.complexity.MetricsGroupNamespace.Items(childComplexity), true
+	case "MetricsGroupNamespace.total":
+		if e.complexity.MetricsGroupNamespace.Total == nil {
+			break
+		}
+
+		return e.complexity.MetricsGroupNamespace.Total(childComplexity), true
+
+	case "MetricsGroupNode.items":
+		if e.complexity.MetricsGroupNode.Items == nil {
+			break
+		}
+
+		return e.complexity.MetricsGroupNode.Items(childComplexity), true
+	case "MetricsGroupNode.total":
+		if e.complexity.MetricsGroupNode.Total == nil {
+			break
+		}
+
+		return e.complexity.MetricsGroupNode.Total(childComplexity), true
+
+	case "MetricsGroupPod.items":
+		if e.complexity.MetricsGroupPod.Items == nil {
+			break
+		}
+
+		return e.complexity.MetricsGroupPod.Items(childComplexity), true
+	case "MetricsGroupPod.total":
+		if e.complexity.MetricsGroupPod.Total == nil {
+			break
+		}
+
+		return e.complexity.MetricsGroupPod.Total(childComplexity), true
+
+	case "MetricsSummary.end":
+		if e.complexity.MetricsSummary.End == nil {
+			break
+		}
+
+		return e.complexity.MetricsSummary.End(childComplexity), true
+	case "MetricsSummary.namespaces":
+		if e.complexity.MetricsSummary.Namespaces == nil {
+			break
+		}
+
+		return e.complexity.MetricsSummary.Namespaces(childComplexity), true
+	case "MetricsSummary.nodes":
+		if e.complexity.MetricsSummary.Nodes == nil {
+			break
+		}
+
+		return e.complexity.MetricsSummary.Nodes(childComplexity), true
+	case "MetricsSummary.pods":
+		if e.complexity.MetricsSummary.Pods == nil {
+			break
+		}
+
+		return e.complexity.MetricsSummary.Pods(childComplexity), true
+	case "MetricsSummary.start":
+		if e.complexity.MetricsSummary.Start == nil {
+			break
+		}
+
+		return e.complexity.MetricsSummary.Start(childComplexity), true
+	case "MetricsSummary.window":
+		if e.complexity.MetricsSummary.Window == nil {
+			break
+		}
+
+		return e.complexity.MetricsSummary.Window(childComplexity), true
+
+	case "NamespaceMetricsAgg.cpu":
+		if e.complexity.NamespaceMetricsAgg.CPU == nil {
+			break
+		}
+
+		return e.complexity.NamespaceMetricsAgg.CPU(childComplexity), true
+	case "NamespaceMetricsAgg.docCount":
+		if e.complexity.NamespaceMetricsAgg.DocCount == nil {
+			break
+		}
+
+		return e.complexity.NamespaceMetricsAgg.DocCount(childComplexity), true
+	case "NamespaceMetricsAgg.mem":
+		if e.complexity.NamespaceMetricsAgg.Mem == nil {
+			break
+		}
+
+		return e.complexity.NamespaceMetricsAgg.Mem(childComplexity), true
+	case "NamespaceMetricsAgg.namespace":
+		if e.complexity.NamespaceMetricsAgg.Namespace == nil {
+			break
+		}
+
+		return e.complexity.NamespaceMetricsAgg.Namespace(childComplexity), true
+	case "NamespaceMetricsAgg.sampleCount":
+		if e.complexity.NamespaceMetricsAgg.SampleCount == nil {
+			break
+		}
+
+		return e.complexity.NamespaceMetricsAgg.SampleCount(childComplexity), true
+	case "NamespaceMetricsAgg.sortKey":
+		if e.complexity.NamespaceMetricsAgg.SortKey == nil {
+			break
+		}
+
+		return e.complexity.NamespaceMetricsAgg.SortKey(childComplexity), true
+
+	case "NodeMetricsAgg.cpu":
+		if e.complexity.NodeMetricsAgg.CPU == nil {
+			break
+		}
+
+		return e.complexity.NodeMetricsAgg.CPU(childComplexity), true
+	case "NodeMetricsAgg.docCount":
+		if e.complexity.NodeMetricsAgg.DocCount == nil {
+			break
+		}
+
+		return e.complexity.NodeMetricsAgg.DocCount(childComplexity), true
+	case "NodeMetricsAgg.mem":
+		if e.complexity.NodeMetricsAgg.Mem == nil {
+			break
+		}
+
+		return e.complexity.NodeMetricsAgg.Mem(childComplexity), true
+	case "NodeMetricsAgg.node":
+		if e.complexity.NodeMetricsAgg.Node == nil {
+			break
+		}
+
+		return e.complexity.NodeMetricsAgg.Node(childComplexity), true
+	case "NodeMetricsAgg.sampleCount":
+		if e.complexity.NodeMetricsAgg.SampleCount == nil {
+			break
+		}
+
+		return e.complexity.NodeMetricsAgg.SampleCount(childComplexity), true
+	case "NodeMetricsAgg.sortKey":
+		if e.complexity.NodeMetricsAgg.SortKey == nil {
+			break
+		}
+
+		return e.complexity.NodeMetricsAgg.SortKey(childComplexity), true
+
+	case "PodMetricsAgg.cpu":
+		if e.complexity.PodMetricsAgg.CPU == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.CPU(childComplexity), true
+	case "PodMetricsAgg.docCount":
+		if e.complexity.PodMetricsAgg.DocCount == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.DocCount(childComplexity), true
+	case "PodMetricsAgg.mem":
+		if e.complexity.PodMetricsAgg.Mem == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.Mem(childComplexity), true
+	case "PodMetricsAgg.namespace":
+		if e.complexity.PodMetricsAgg.Namespace == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.Namespace(childComplexity), true
+	case "PodMetricsAgg.node":
+		if e.complexity.PodMetricsAgg.Node == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.Node(childComplexity), true
+	case "PodMetricsAgg.podName":
+		if e.complexity.PodMetricsAgg.PodName == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.PodName(childComplexity), true
+	case "PodMetricsAgg.sampleCount":
+		if e.complexity.PodMetricsAgg.SampleCount == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.SampleCount(childComplexity), true
+	case "PodMetricsAgg.sortKey":
+		if e.complexity.PodMetricsAgg.SortKey == nil {
+			break
+		}
+
+		return e.complexity.PodMetricsAgg.SortKey(childComplexity), true
+
 	case "Query.metrics":
 		if e.complexity.Query.Metrics == nil {
 			break
@@ -431,6 +747,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Metrics(childComplexity, args["range"].(model.TimeRangeInput), args["scope"].(*model.MetricScopeInput), args["resolution"].(*model.MetricResolution), args["groupBy"].(*model.MetricGroupBy), args["orderBy"].(*model.MetricOrderBy), args["orderDir"].(*model.OrderDirection), args["page"].(*model.PaginationInput)), true
+	case "Query.metricsRaw":
+		if e.complexity.Query.MetricsRaw == nil {
+			break
+		}
+
+		args, err := ec.field_Query_metricsRaw_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MetricsRaw(childComplexity, args["input"].(model.RawMetricsInput)), true
+	case "Query.metricsSummary":
+		if e.complexity.Query.MetricsSummary == nil {
+			break
+		}
+
+		args, err := ec.field_Query_metricsSummary_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MetricsSummary(childComplexity, args["input"].(model.MetricsSummaryInput)), true
 	case "Query.trace":
 		if e.complexity.Query.Trace == nil {
 			break
@@ -734,7 +1072,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputMetricScopeInput,
+		ec.unmarshalInputMetricsSummaryInput,
 		ec.unmarshalInputPaginationInput,
+		ec.unmarshalInputRawMetricsInput,
 		ec.unmarshalInputTimeRangeInput,
 		ec.unmarshalInputTraceSearchInput,
 	)
@@ -846,6 +1186,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_metricsRaw_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRawMetricsInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐRawMetricsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_metricsSummary_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMetricsSummaryInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsSummaryInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2031,6 +2393,1338 @@ func (ec *executionContext) fieldContext_MetricSource_windowSamples(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _MetricStats_avg(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_avg,
+		func(ctx context.Context) (any, error) {
+			return obj.Avg, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_avg(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_max(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_max,
+		func(ctx context.Context) (any, error) {
+			return obj.Max, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_max(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_p95(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_p95,
+		func(ctx context.Context) (any, error) {
+			return obj.P95, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_p95(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_avgHuman(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_avgHuman,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgHuman, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_avgHuman(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_maxHuman(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_maxHuman,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxHuman, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_maxHuman(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_p95Human(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_p95Human,
+		func(ctx context.Context) (any, error) {
+			return obj.P95Human, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_p95Human(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_totalMax(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_totalMax,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalMax, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_totalMax(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricStats_totalMaxHuman(ctx context.Context, field graphql.CollectedField, obj *model.MetricStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricStats_totalMaxHuman,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalMaxHuman, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricStats_totalMaxHuman(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsGroupNamespace_total(ctx context.Context, field graphql.CollectedField, obj *model.MetricsGroupNamespace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsGroupNamespace_total,
+		func(ctx context.Context) (any, error) {
+			return obj.Total, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsGroupNamespace_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsGroupNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsGroupNamespace_items(ctx context.Context, field graphql.CollectedField, obj *model.MetricsGroupNamespace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsGroupNamespace_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNNamespaceMetricsAgg2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNamespaceMetricsAggᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsGroupNamespace_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsGroupNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "namespace":
+				return ec.fieldContext_NamespaceMetricsAgg_namespace(ctx, field)
+			case "docCount":
+				return ec.fieldContext_NamespaceMetricsAgg_docCount(ctx, field)
+			case "sampleCount":
+				return ec.fieldContext_NamespaceMetricsAgg_sampleCount(ctx, field)
+			case "cpu":
+				return ec.fieldContext_NamespaceMetricsAgg_cpu(ctx, field)
+			case "mem":
+				return ec.fieldContext_NamespaceMetricsAgg_mem(ctx, field)
+			case "sortKey":
+				return ec.fieldContext_NamespaceMetricsAgg_sortKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NamespaceMetricsAgg", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsGroupNode_total(ctx context.Context, field graphql.CollectedField, obj *model.MetricsGroupNode) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsGroupNode_total,
+		func(ctx context.Context) (any, error) {
+			return obj.Total, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsGroupNode_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsGroupNode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsGroupNode_items(ctx context.Context, field graphql.CollectedField, obj *model.MetricsGroupNode) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsGroupNode_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNNodeMetricsAgg2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNodeMetricsAggᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsGroupNode_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsGroupNode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_NodeMetricsAgg_node(ctx, field)
+			case "docCount":
+				return ec.fieldContext_NodeMetricsAgg_docCount(ctx, field)
+			case "sampleCount":
+				return ec.fieldContext_NodeMetricsAgg_sampleCount(ctx, field)
+			case "cpu":
+				return ec.fieldContext_NodeMetricsAgg_cpu(ctx, field)
+			case "mem":
+				return ec.fieldContext_NodeMetricsAgg_mem(ctx, field)
+			case "sortKey":
+				return ec.fieldContext_NodeMetricsAgg_sortKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NodeMetricsAgg", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsGroupPod_total(ctx context.Context, field graphql.CollectedField, obj *model.MetricsGroupPod) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsGroupPod_total,
+		func(ctx context.Context) (any, error) {
+			return obj.Total, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsGroupPod_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsGroupPod",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsGroupPod_items(ctx context.Context, field graphql.CollectedField, obj *model.MetricsGroupPod) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsGroupPod_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNPodMetricsAgg2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐPodMetricsAggᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsGroupPod_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsGroupPod",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "podName":
+				return ec.fieldContext_PodMetricsAgg_podName(ctx, field)
+			case "namespace":
+				return ec.fieldContext_PodMetricsAgg_namespace(ctx, field)
+			case "node":
+				return ec.fieldContext_PodMetricsAgg_node(ctx, field)
+			case "docCount":
+				return ec.fieldContext_PodMetricsAgg_docCount(ctx, field)
+			case "sampleCount":
+				return ec.fieldContext_PodMetricsAgg_sampleCount(ctx, field)
+			case "cpu":
+				return ec.fieldContext_PodMetricsAgg_cpu(ctx, field)
+			case "mem":
+				return ec.fieldContext_PodMetricsAgg_mem(ctx, field)
+			case "sortKey":
+				return ec.fieldContext_PodMetricsAgg_sortKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PodMetricsAgg", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsSummary_window(ctx context.Context, field graphql.CollectedField, obj *model.MetricsSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsSummary_window,
+		func(ctx context.Context) (any, error) {
+			return obj.Window, nil
+		},
+		nil,
+		ec.marshalNMetricsWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsWindow,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsSummary_window(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MetricsWindow does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsSummary_start(ctx context.Context, field graphql.CollectedField, obj *model.MetricsSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsSummary_start,
+		func(ctx context.Context) (any, error) {
+			return obj.Start, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsSummary_start(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsSummary_end(ctx context.Context, field graphql.CollectedField, obj *model.MetricsSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsSummary_end,
+		func(ctx context.Context) (any, error) {
+			return obj.End, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsSummary_end(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsSummary_nodes(ctx context.Context, field graphql.CollectedField, obj *model.MetricsSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsSummary_nodes,
+		func(ctx context.Context) (any, error) {
+			return obj.Nodes, nil
+		},
+		nil,
+		ec.marshalNMetricsGroupNode2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsGroupNode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsSummary_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_MetricsGroupNode_total(ctx, field)
+			case "items":
+				return ec.fieldContext_MetricsGroupNode_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricsGroupNode", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsSummary_namespaces(ctx context.Context, field graphql.CollectedField, obj *model.MetricsSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsSummary_namespaces,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespaces, nil
+		},
+		nil,
+		ec.marshalNMetricsGroupNamespace2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsGroupNamespace,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsSummary_namespaces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_MetricsGroupNamespace_total(ctx, field)
+			case "items":
+				return ec.fieldContext_MetricsGroupNamespace_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricsGroupNamespace", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MetricsSummary_pods(ctx context.Context, field graphql.CollectedField, obj *model.MetricsSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MetricsSummary_pods,
+		func(ctx context.Context) (any, error) {
+			return obj.Pods, nil
+		},
+		nil,
+		ec.marshalNMetricsGroupPod2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsGroupPod,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MetricsSummary_pods(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MetricsSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_MetricsGroupPod_total(ctx, field)
+			case "items":
+				return ec.fieldContext_MetricsGroupPod_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricsGroupPod", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceMetricsAgg_namespace(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NamespaceMetricsAgg_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NamespaceMetricsAgg_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceMetricsAgg_docCount(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NamespaceMetricsAgg_docCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DocCount, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NamespaceMetricsAgg_docCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceMetricsAgg_sampleCount(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NamespaceMetricsAgg_sampleCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SampleCount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NamespaceMetricsAgg_sampleCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceMetricsAgg_cpu(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NamespaceMetricsAgg_cpu,
+		func(ctx context.Context) (any, error) {
+			return obj.CPU, nil
+		},
+		nil,
+		ec.marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NamespaceMetricsAgg_cpu(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avg":
+				return ec.fieldContext_MetricStats_avg(ctx, field)
+			case "max":
+				return ec.fieldContext_MetricStats_max(ctx, field)
+			case "p95":
+				return ec.fieldContext_MetricStats_p95(ctx, field)
+			case "avgHuman":
+				return ec.fieldContext_MetricStats_avgHuman(ctx, field)
+			case "maxHuman":
+				return ec.fieldContext_MetricStats_maxHuman(ctx, field)
+			case "p95Human":
+				return ec.fieldContext_MetricStats_p95Human(ctx, field)
+			case "totalMax":
+				return ec.fieldContext_MetricStats_totalMax(ctx, field)
+			case "totalMaxHuman":
+				return ec.fieldContext_MetricStats_totalMaxHuman(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceMetricsAgg_mem(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NamespaceMetricsAgg_mem,
+		func(ctx context.Context) (any, error) {
+			return obj.Mem, nil
+		},
+		nil,
+		ec.marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NamespaceMetricsAgg_mem(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avg":
+				return ec.fieldContext_MetricStats_avg(ctx, field)
+			case "max":
+				return ec.fieldContext_MetricStats_max(ctx, field)
+			case "p95":
+				return ec.fieldContext_MetricStats_p95(ctx, field)
+			case "avgHuman":
+				return ec.fieldContext_MetricStats_avgHuman(ctx, field)
+			case "maxHuman":
+				return ec.fieldContext_MetricStats_maxHuman(ctx, field)
+			case "p95Human":
+				return ec.fieldContext_MetricStats_p95Human(ctx, field)
+			case "totalMax":
+				return ec.fieldContext_MetricStats_totalMax(ctx, field)
+			case "totalMaxHuman":
+				return ec.fieldContext_MetricStats_totalMaxHuman(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceMetricsAgg_sortKey(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NamespaceMetricsAgg_sortKey,
+		func(ctx context.Context) (any, error) {
+			return obj.SortKey, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NamespaceMetricsAgg_sortKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NodeMetricsAgg_node(ctx context.Context, field graphql.CollectedField, obj *model.NodeMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NodeMetricsAgg_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NodeMetricsAgg_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NodeMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NodeMetricsAgg_docCount(ctx context.Context, field graphql.CollectedField, obj *model.NodeMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NodeMetricsAgg_docCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DocCount, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NodeMetricsAgg_docCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NodeMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NodeMetricsAgg_sampleCount(ctx context.Context, field graphql.CollectedField, obj *model.NodeMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NodeMetricsAgg_sampleCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SampleCount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NodeMetricsAgg_sampleCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NodeMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NodeMetricsAgg_cpu(ctx context.Context, field graphql.CollectedField, obj *model.NodeMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NodeMetricsAgg_cpu,
+		func(ctx context.Context) (any, error) {
+			return obj.CPU, nil
+		},
+		nil,
+		ec.marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NodeMetricsAgg_cpu(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NodeMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avg":
+				return ec.fieldContext_MetricStats_avg(ctx, field)
+			case "max":
+				return ec.fieldContext_MetricStats_max(ctx, field)
+			case "p95":
+				return ec.fieldContext_MetricStats_p95(ctx, field)
+			case "avgHuman":
+				return ec.fieldContext_MetricStats_avgHuman(ctx, field)
+			case "maxHuman":
+				return ec.fieldContext_MetricStats_maxHuman(ctx, field)
+			case "p95Human":
+				return ec.fieldContext_MetricStats_p95Human(ctx, field)
+			case "totalMax":
+				return ec.fieldContext_MetricStats_totalMax(ctx, field)
+			case "totalMaxHuman":
+				return ec.fieldContext_MetricStats_totalMaxHuman(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NodeMetricsAgg_mem(ctx context.Context, field graphql.CollectedField, obj *model.NodeMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NodeMetricsAgg_mem,
+		func(ctx context.Context) (any, error) {
+			return obj.Mem, nil
+		},
+		nil,
+		ec.marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NodeMetricsAgg_mem(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NodeMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avg":
+				return ec.fieldContext_MetricStats_avg(ctx, field)
+			case "max":
+				return ec.fieldContext_MetricStats_max(ctx, field)
+			case "p95":
+				return ec.fieldContext_MetricStats_p95(ctx, field)
+			case "avgHuman":
+				return ec.fieldContext_MetricStats_avgHuman(ctx, field)
+			case "maxHuman":
+				return ec.fieldContext_MetricStats_maxHuman(ctx, field)
+			case "p95Human":
+				return ec.fieldContext_MetricStats_p95Human(ctx, field)
+			case "totalMax":
+				return ec.fieldContext_MetricStats_totalMax(ctx, field)
+			case "totalMaxHuman":
+				return ec.fieldContext_MetricStats_totalMaxHuman(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NodeMetricsAgg_sortKey(ctx context.Context, field graphql.CollectedField, obj *model.NodeMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NodeMetricsAgg_sortKey,
+		func(ctx context.Context) (any, error) {
+			return obj.SortKey, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NodeMetricsAgg_sortKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NodeMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_podName(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_podName,
+		func(ctx context.Context) (any, error) {
+			return obj.PodName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_podName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_namespace(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_node(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_docCount(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_docCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DocCount, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_docCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_sampleCount(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_sampleCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SampleCount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_sampleCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_cpu(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_cpu,
+		func(ctx context.Context) (any, error) {
+			return obj.CPU, nil
+		},
+		nil,
+		ec.marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_cpu(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avg":
+				return ec.fieldContext_MetricStats_avg(ctx, field)
+			case "max":
+				return ec.fieldContext_MetricStats_max(ctx, field)
+			case "p95":
+				return ec.fieldContext_MetricStats_p95(ctx, field)
+			case "avgHuman":
+				return ec.fieldContext_MetricStats_avgHuman(ctx, field)
+			case "maxHuman":
+				return ec.fieldContext_MetricStats_maxHuman(ctx, field)
+			case "p95Human":
+				return ec.fieldContext_MetricStats_p95Human(ctx, field)
+			case "totalMax":
+				return ec.fieldContext_MetricStats_totalMax(ctx, field)
+			case "totalMaxHuman":
+				return ec.fieldContext_MetricStats_totalMaxHuman(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_mem(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_mem,
+		func(ctx context.Context) (any, error) {
+			return obj.Mem, nil
+		},
+		nil,
+		ec.marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_mem(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avg":
+				return ec.fieldContext_MetricStats_avg(ctx, field)
+			case "max":
+				return ec.fieldContext_MetricStats_max(ctx, field)
+			case "p95":
+				return ec.fieldContext_MetricStats_p95(ctx, field)
+			case "avgHuman":
+				return ec.fieldContext_MetricStats_avgHuman(ctx, field)
+			case "maxHuman":
+				return ec.fieldContext_MetricStats_maxHuman(ctx, field)
+			case "p95Human":
+				return ec.fieldContext_MetricStats_p95Human(ctx, field)
+			case "totalMax":
+				return ec.fieldContext_MetricStats_totalMax(ctx, field)
+			case "totalMaxHuman":
+				return ec.fieldContext_MetricStats_totalMaxHuman(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodMetricsAgg_sortKey(ctx context.Context, field graphql.CollectedField, obj *model.PodMetricsAgg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PodMetricsAgg_sortKey,
+		func(ctx context.Context) (any, error) {
+			return obj.SortKey, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PodMetricsAgg_sortKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodMetricsAgg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_trace(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2186,6 +3880,108 @@ func (ec *executionContext) fieldContext_Query_traceSearch(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_traceSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_metricsRaw(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_metricsRaw,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().MetricsRaw(ctx, fc.Args["input"].(model.RawMetricsInput))
+		},
+		nil,
+		ec.marshalOMetricSeriesPage2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricSeriesPage,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_metricsRaw(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_MetricSeriesPage_total(ctx, field)
+			case "items":
+				return ec.fieldContext_MetricSeriesPage_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricSeriesPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_metricsRaw_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_metricsSummary(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_metricsSummary,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().MetricsSummary(ctx, fc.Args["input"].(model.MetricsSummaryInput))
+		},
+		nil,
+		ec.marshalNMetricsSummary2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsSummary,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_metricsSummary(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "window":
+				return ec.fieldContext_MetricsSummary_window(ctx, field)
+			case "start":
+				return ec.fieldContext_MetricsSummary_start(ctx, field)
+			case "end":
+				return ec.fieldContext_MetricsSummary_end(ctx, field)
+			case "nodes":
+				return ec.fieldContext_MetricsSummary_nodes(ctx, field)
+			case "namespaces":
+				return ec.fieldContext_MetricsSummary_namespaces(ctx, field)
+			case "pods":
+				return ec.fieldContext_MetricsSummary_pods(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MetricsSummary", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_metricsSummary_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5095,6 +6891,33 @@ func (ec *executionContext) unmarshalInputMetricScopeInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMetricsSummaryInput(ctx context.Context, obj any) (model.MetricsSummaryInput, error) {
+	var it model.MetricsSummaryInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"window"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "window":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("window"))
+			data, err := ec.unmarshalNMetricsWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsWindow(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Window = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPaginationInput(ctx context.Context, obj any) (model.PaginationInput, error) {
 	var it model.PaginationInput
 	asMap := map[string]any{}
@@ -5130,6 +6953,40 @@ func (ec *executionContext) unmarshalInputPaginationInput(ctx context.Context, o
 				return it, err
 			}
 			it.Offset = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRawMetricsInput(ctx context.Context, obj any) (model.RawMetricsInput, error) {
+	var it model.RawMetricsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"podName", "timeStamp"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "podName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PodName = data
+		case "timeStamp":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeStamp"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TimeStamp = data
 		}
 	}
 
@@ -5232,6 +7089,40 @@ func (ec *executionContext) unmarshalInputTraceSearchInput(ctx context.Context, 
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _MetricsAggRow(ctx context.Context, sel ast.SelectionSet, obj model.MetricsAggRow) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.PodMetricsAgg:
+		return ec._PodMetricsAgg(ctx, sel, &obj)
+	case *model.PodMetricsAgg:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PodMetricsAgg(ctx, sel, obj)
+	case model.NodeMetricsAgg:
+		return ec._NodeMetricsAgg(ctx, sel, &obj)
+	case *model.NodeMetricsAgg:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NodeMetricsAgg(ctx, sel, obj)
+	case model.NamespaceMetricsAgg:
+		return ec._NamespaceMetricsAgg(ctx, sel, &obj)
+	case *model.NamespaceMetricsAgg:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NamespaceMetricsAgg(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of MetricsAggRow must implement graphql.Marshaler", obj))
+		}
+	}
+}
 
 func (ec *executionContext) _TraceItemPayload(ctx context.Context, sel ast.SelectionSet, obj model.TraceItemPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
@@ -5694,6 +7585,430 @@ func (ec *executionContext) _MetricSource(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var metricStatsImplementors = []string{"MetricStats"}
+
+func (ec *executionContext) _MetricStats(ctx context.Context, sel ast.SelectionSet, obj *model.MetricStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, metricStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MetricStats")
+		case "avg":
+			out.Values[i] = ec._MetricStats_avg(ctx, field, obj)
+		case "max":
+			out.Values[i] = ec._MetricStats_max(ctx, field, obj)
+		case "p95":
+			out.Values[i] = ec._MetricStats_p95(ctx, field, obj)
+		case "avgHuman":
+			out.Values[i] = ec._MetricStats_avgHuman(ctx, field, obj)
+		case "maxHuman":
+			out.Values[i] = ec._MetricStats_maxHuman(ctx, field, obj)
+		case "p95Human":
+			out.Values[i] = ec._MetricStats_p95Human(ctx, field, obj)
+		case "totalMax":
+			out.Values[i] = ec._MetricStats_totalMax(ctx, field, obj)
+		case "totalMaxHuman":
+			out.Values[i] = ec._MetricStats_totalMaxHuman(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var metricsGroupNamespaceImplementors = []string{"MetricsGroupNamespace"}
+
+func (ec *executionContext) _MetricsGroupNamespace(ctx context.Context, sel ast.SelectionSet, obj *model.MetricsGroupNamespace) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, metricsGroupNamespaceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MetricsGroupNamespace")
+		case "total":
+			out.Values[i] = ec._MetricsGroupNamespace_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._MetricsGroupNamespace_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var metricsGroupNodeImplementors = []string{"MetricsGroupNode"}
+
+func (ec *executionContext) _MetricsGroupNode(ctx context.Context, sel ast.SelectionSet, obj *model.MetricsGroupNode) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, metricsGroupNodeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MetricsGroupNode")
+		case "total":
+			out.Values[i] = ec._MetricsGroupNode_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._MetricsGroupNode_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var metricsGroupPodImplementors = []string{"MetricsGroupPod"}
+
+func (ec *executionContext) _MetricsGroupPod(ctx context.Context, sel ast.SelectionSet, obj *model.MetricsGroupPod) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, metricsGroupPodImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MetricsGroupPod")
+		case "total":
+			out.Values[i] = ec._MetricsGroupPod_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._MetricsGroupPod_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var metricsSummaryImplementors = []string{"MetricsSummary"}
+
+func (ec *executionContext) _MetricsSummary(ctx context.Context, sel ast.SelectionSet, obj *model.MetricsSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, metricsSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MetricsSummary")
+		case "window":
+			out.Values[i] = ec._MetricsSummary_window(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "start":
+			out.Values[i] = ec._MetricsSummary_start(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "end":
+			out.Values[i] = ec._MetricsSummary_end(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nodes":
+			out.Values[i] = ec._MetricsSummary_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "namespaces":
+			out.Values[i] = ec._MetricsSummary_namespaces(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pods":
+			out.Values[i] = ec._MetricsSummary_pods(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var namespaceMetricsAggImplementors = []string{"NamespaceMetricsAgg", "MetricsAggRow"}
+
+func (ec *executionContext) _NamespaceMetricsAgg(ctx context.Context, sel ast.SelectionSet, obj *model.NamespaceMetricsAgg) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, namespaceMetricsAggImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NamespaceMetricsAgg")
+		case "namespace":
+			out.Values[i] = ec._NamespaceMetricsAgg_namespace(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "docCount":
+			out.Values[i] = ec._NamespaceMetricsAgg_docCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sampleCount":
+			out.Values[i] = ec._NamespaceMetricsAgg_sampleCount(ctx, field, obj)
+		case "cpu":
+			out.Values[i] = ec._NamespaceMetricsAgg_cpu(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mem":
+			out.Values[i] = ec._NamespaceMetricsAgg_mem(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sortKey":
+			out.Values[i] = ec._NamespaceMetricsAgg_sortKey(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var nodeMetricsAggImplementors = []string{"NodeMetricsAgg", "MetricsAggRow"}
+
+func (ec *executionContext) _NodeMetricsAgg(ctx context.Context, sel ast.SelectionSet, obj *model.NodeMetricsAgg) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, nodeMetricsAggImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NodeMetricsAgg")
+		case "node":
+			out.Values[i] = ec._NodeMetricsAgg_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "docCount":
+			out.Values[i] = ec._NodeMetricsAgg_docCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sampleCount":
+			out.Values[i] = ec._NodeMetricsAgg_sampleCount(ctx, field, obj)
+		case "cpu":
+			out.Values[i] = ec._NodeMetricsAgg_cpu(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mem":
+			out.Values[i] = ec._NodeMetricsAgg_mem(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sortKey":
+			out.Values[i] = ec._NodeMetricsAgg_sortKey(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var podMetricsAggImplementors = []string{"PodMetricsAgg", "MetricsAggRow"}
+
+func (ec *executionContext) _PodMetricsAgg(ctx context.Context, sel ast.SelectionSet, obj *model.PodMetricsAgg) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, podMetricsAggImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PodMetricsAgg")
+		case "podName":
+			out.Values[i] = ec._PodMetricsAgg_podName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "namespace":
+			out.Values[i] = ec._PodMetricsAgg_namespace(ctx, field, obj)
+		case "node":
+			out.Values[i] = ec._PodMetricsAgg_node(ctx, field, obj)
+		case "docCount":
+			out.Values[i] = ec._PodMetricsAgg_docCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sampleCount":
+			out.Values[i] = ec._PodMetricsAgg_sampleCount(ctx, field, obj)
+		case "cpu":
+			out.Values[i] = ec._PodMetricsAgg_cpu(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mem":
+			out.Values[i] = ec._PodMetricsAgg_mem(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sortKey":
+			out.Values[i] = ec._PodMetricsAgg_sortKey(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -5761,6 +8076,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_traceSearch(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "metricsRaw":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_metricsRaw(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "metricsSummary":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_metricsSummary(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6770,6 +9126,242 @@ func (ec *executionContext) marshalNMetricSeriesPage2ᚖgithubᚗcomᚋodysseia�
 	return ec._MetricSeriesPage(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNMetricStats2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricStats(ctx context.Context, sel ast.SelectionSet, v *model.MetricStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MetricStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMetricsGroupNamespace2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsGroupNamespace(ctx context.Context, sel ast.SelectionSet, v *model.MetricsGroupNamespace) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MetricsGroupNamespace(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMetricsGroupNode2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsGroupNode(ctx context.Context, sel ast.SelectionSet, v *model.MetricsGroupNode) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MetricsGroupNode(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMetricsGroupPod2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsGroupPod(ctx context.Context, sel ast.SelectionSet, v *model.MetricsGroupPod) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MetricsGroupPod(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMetricsSummary2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsSummary(ctx context.Context, sel ast.SelectionSet, v model.MetricsSummary) graphql.Marshaler {
+	return ec._MetricsSummary(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMetricsSummary2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsSummary(ctx context.Context, sel ast.SelectionSet, v *model.MetricsSummary) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MetricsSummary(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMetricsSummaryInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsSummaryInput(ctx context.Context, v any) (model.MetricsSummaryInput, error) {
+	res, err := ec.unmarshalInputMetricsSummaryInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNMetricsWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsWindow(ctx context.Context, v any) (model.MetricsWindow, error) {
+	var res model.MetricsWindow
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMetricsWindow2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricsWindow(ctx context.Context, sel ast.SelectionSet, v model.MetricsWindow) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNNamespaceMetricsAgg2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNamespaceMetricsAggᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NamespaceMetricsAgg) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNamespaceMetricsAgg2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNamespaceMetricsAgg(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNamespaceMetricsAgg2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNamespaceMetricsAgg(ctx context.Context, sel ast.SelectionSet, v *model.NamespaceMetricsAgg) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NamespaceMetricsAgg(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNodeMetricsAgg2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNodeMetricsAggᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NodeMetricsAgg) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNodeMetricsAgg2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNodeMetricsAgg(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNodeMetricsAgg2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐNodeMetricsAgg(ctx context.Context, sel ast.SelectionSet, v *model.NodeMetricsAgg) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NodeMetricsAgg(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPodMetricsAgg2ᚕᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐPodMetricsAggᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PodMetricsAgg) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPodMetricsAgg2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐPodMetricsAgg(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPodMetricsAgg2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐPodMetricsAgg(ctx context.Context, sel ast.SelectionSet, v *model.PodMetricsAgg) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PodMetricsAgg(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRawMetricsInput2githubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐRawMetricsInput(ctx context.Context, v any) (model.RawMetricsInput, error) {
+	res, err := ec.unmarshalInputRawMetricsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7335,6 +9927,13 @@ func (ec *executionContext) unmarshalOMetricScopeInput2ᚖgithubᚗcomᚋodyssei
 	}
 	res, err := ec.unmarshalInputMetricScopeInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMetricSeriesPage2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricSeriesPage(ctx context.Context, sel ast.SelectionSet, v *model.MetricSeriesPage) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MetricSeriesPage(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOMetricSource2ᚖgithubᚗcomᚋodysseiaᚑgreekᚋattikeᚋeuripidesᚋgraphᚋmodelᚐMetricSource(ctx context.Context, sel ast.SelectionSet, v *model.MetricSource) graphql.Marshaler {

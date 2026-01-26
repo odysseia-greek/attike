@@ -53,6 +53,8 @@ type Query {
     tracePoll(limit: Int!): EnqueueItems
     traceSearch(input: TraceSearchInput!): TracePage!
 
+    metricsRaw(input: RawMetricsInput!): MetricSeriesPage
+    metricsSummary(input: MetricsSummaryInput!): MetricsSummary!
 
     # Metrics unified API (raw vs rollup is resolver choice).
     metrics(
@@ -66,6 +68,110 @@ type Query {
     ): MetricSeriesPage!
 }
 
+input MetricsSummaryInput {
+    window: MetricsWindow!
+}
+
+"""
+Top-level “overview for a time window”.
+Everything is aggregated over the selected window.
+"""
+type MetricsSummary {
+    window: MetricsWindow!
+    start: DateTime!
+    end: DateTime!
+
+    nodes: MetricsGroupNode!
+    namespaces: MetricsGroupNamespace!
+    pods: MetricsGroupPod!
+}
+
+interface MetricsAggRow {
+    # how many rollup docs were aggregated
+    docCount: Int!
+
+    # how many raw samples they represent (sum of _source.count)
+    sampleCount: Int
+
+    cpu: MetricStats!
+    mem: MetricStats!
+}
+
+type MetricStats {
+    avg: Float
+    max: Float
+    p95: Float
+
+    avgHuman: String
+    maxHuman: String
+    p95Human: String
+
+    totalMax: Float
+    totalMaxHuman: String
+}
+
+# -------------------------
+# Groups
+# -------------------------
+
+type MetricsGroupNode {
+    total: Int!
+    items: [NodeMetricsAgg!]!
+}
+
+type MetricsGroupNamespace {
+    total: Int!
+    items: [NamespaceMetricsAgg!]!
+}
+
+type MetricsGroupPod {
+    total: Int!
+    items: [PodMetricsAgg!]!
+}
+
+# -------------------------
+# Rows
+# -------------------------
+
+type NodeMetricsAgg implements MetricsAggRow {
+    node: String!
+    docCount: Int!
+    sampleCount: Int
+    cpu: MetricStats!
+    mem: MetricStats!
+
+    # optional: provide a hint for UI ordering
+    sortKey: Float
+}
+
+type NamespaceMetricsAgg implements MetricsAggRow {
+    namespace: String!
+    docCount: Int!
+    sampleCount: Int
+    cpu: MetricStats!
+    mem: MetricStats!
+
+    sortKey: Float
+}
+
+type PodMetricsAgg implements MetricsAggRow {
+    podName: String!
+    namespace: String
+    node: String
+
+    docCount: Int!
+    sampleCount: Int
+    cpu: MetricStats!
+    mem: MetricStats!
+
+    sortKey: Float
+}
+
+input RawMetricsInput {
+    podName: String
+    timeStamp: String
+}
+
 input TraceSearchInput {
     window: TraceWindow!           # 5m/10m/30m/1h/2h/12h/24h
     limit: Int = 50
@@ -77,6 +183,15 @@ input TraceSearchInput {
 
 enum TraceWindow {
     M5
+    M10
+    M30
+    H1
+    H2
+    H12
+    H24
+}
+
+enum MetricsWindow {
     M10
     M30
     H1

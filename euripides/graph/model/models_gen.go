@@ -9,6 +9,14 @@ import (
 	"strconv"
 )
 
+type MetricsAggRow interface {
+	IsMetricsAggRow()
+	GetDocCount() int32
+	GetSampleCount() *int32
+	GetCPU() *MetricStats
+	GetMem() *MetricStats
+}
+
 type TraceItemPayload interface {
 	IsTraceItemPayload()
 }
@@ -87,12 +95,105 @@ type MetricSource struct {
 	WindowSamples *int32  `json:"windowSamples,omitempty"`
 }
 
+type MetricStats struct {
+	Avg           *float64 `json:"avg,omitempty"`
+	Max           *float64 `json:"max,omitempty"`
+	P95           *float64 `json:"p95,omitempty"`
+	AvgHuman      *string  `json:"avgHuman,omitempty"`
+	MaxHuman      *string  `json:"maxHuman,omitempty"`
+	P95Human      *string  `json:"p95Human,omitempty"`
+	TotalMax      *float64 `json:"totalMax,omitempty"`
+	TotalMaxHuman *string  `json:"totalMaxHuman,omitempty"`
+}
+
+type MetricsGroupNamespace struct {
+	Total int32                  `json:"total"`
+	Items []*NamespaceMetricsAgg `json:"items"`
+}
+
+type MetricsGroupNode struct {
+	Total int32             `json:"total"`
+	Items []*NodeMetricsAgg `json:"items"`
+}
+
+type MetricsGroupPod struct {
+	Total int32            `json:"total"`
+	Items []*PodMetricsAgg `json:"items"`
+}
+
+// Top-level “overview for a time window”.
+// Everything is aggregated over the selected window.
+type MetricsSummary struct {
+	Window     MetricsWindow          `json:"window"`
+	Start      string                 `json:"start"`
+	End        string                 `json:"end"`
+	Nodes      *MetricsGroupNode      `json:"nodes"`
+	Namespaces *MetricsGroupNamespace `json:"namespaces"`
+	Pods       *MetricsGroupPod       `json:"pods"`
+}
+
+type MetricsSummaryInput struct {
+	Window MetricsWindow `json:"window"`
+}
+
+type NamespaceMetricsAgg struct {
+	Namespace   string       `json:"namespace"`
+	DocCount    int32        `json:"docCount"`
+	SampleCount *int32       `json:"sampleCount,omitempty"`
+	CPU         *MetricStats `json:"cpu"`
+	Mem         *MetricStats `json:"mem"`
+	SortKey     *float64     `json:"sortKey,omitempty"`
+}
+
+func (NamespaceMetricsAgg) IsMetricsAggRow()            {}
+func (this NamespaceMetricsAgg) GetDocCount() int32     { return this.DocCount }
+func (this NamespaceMetricsAgg) GetSampleCount() *int32 { return this.SampleCount }
+func (this NamespaceMetricsAgg) GetCPU() *MetricStats   { return this.CPU }
+func (this NamespaceMetricsAgg) GetMem() *MetricStats   { return this.Mem }
+
+type NodeMetricsAgg struct {
+	Node        string       `json:"node"`
+	DocCount    int32        `json:"docCount"`
+	SampleCount *int32       `json:"sampleCount,omitempty"`
+	CPU         *MetricStats `json:"cpu"`
+	Mem         *MetricStats `json:"mem"`
+	SortKey     *float64     `json:"sortKey,omitempty"`
+}
+
+func (NodeMetricsAgg) IsMetricsAggRow()            {}
+func (this NodeMetricsAgg) GetDocCount() int32     { return this.DocCount }
+func (this NodeMetricsAgg) GetSampleCount() *int32 { return this.SampleCount }
+func (this NodeMetricsAgg) GetCPU() *MetricStats   { return this.CPU }
+func (this NodeMetricsAgg) GetMem() *MetricStats   { return this.Mem }
+
 type PaginationInput struct {
 	Limit  *int32 `json:"limit,omitempty"`
 	Offset *int32 `json:"offset,omitempty"`
 }
 
+type PodMetricsAgg struct {
+	PodName     string       `json:"podName"`
+	Namespace   *string      `json:"namespace,omitempty"`
+	Node        *string      `json:"node,omitempty"`
+	DocCount    int32        `json:"docCount"`
+	SampleCount *int32       `json:"sampleCount,omitempty"`
+	CPU         *MetricStats `json:"cpu"`
+	Mem         *MetricStats `json:"mem"`
+	SortKey     *float64     `json:"sortKey,omitempty"`
+}
+
+func (PodMetricsAgg) IsMetricsAggRow()            {}
+func (this PodMetricsAgg) GetDocCount() int32     { return this.DocCount }
+func (this PodMetricsAgg) GetSampleCount() *int32 { return this.SampleCount }
+func (this PodMetricsAgg) GetCPU() *MetricStats   { return this.CPU }
+func (this PodMetricsAgg) GetMem() *MetricStats   { return this.Mem }
+
 type Query struct {
+}
+
+type RawMetricsInput struct {
+	PodName   *string `json:"podName,omitempty"`
+	TimeStamp *string `json:"timeStamp,omitempty"`
 }
 
 type TimeRangeInput struct {
@@ -352,6 +453,69 @@ func (e *MetricResolution) UnmarshalJSON(b []byte) error {
 }
 
 func (e MetricResolution) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type MetricsWindow string
+
+const (
+	MetricsWindowM10 MetricsWindow = "M10"
+	MetricsWindowM30 MetricsWindow = "M30"
+	MetricsWindowH1  MetricsWindow = "H1"
+	MetricsWindowH2  MetricsWindow = "H2"
+	MetricsWindowH12 MetricsWindow = "H12"
+	MetricsWindowH24 MetricsWindow = "H24"
+)
+
+var AllMetricsWindow = []MetricsWindow{
+	MetricsWindowM10,
+	MetricsWindowM30,
+	MetricsWindowH1,
+	MetricsWindowH2,
+	MetricsWindowH12,
+	MetricsWindowH24,
+}
+
+func (e MetricsWindow) IsValid() bool {
+	switch e {
+	case MetricsWindowM10, MetricsWindowM30, MetricsWindowH1, MetricsWindowH2, MetricsWindowH12, MetricsWindowH24:
+		return true
+	}
+	return false
+}
+
+func (e MetricsWindow) String() string {
+	return string(e)
+}
+
+func (e *MetricsWindow) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MetricsWindow(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MetricsWindow", str)
+	}
+	return nil
+}
+
+func (e MetricsWindow) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *MetricsWindow) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e MetricsWindow) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -55,9 +55,6 @@ func (e *EuripidesHandler) TraceSearch(ctx context.Context, input *model.TraceSe
 
 	query := elastic.BuildTraceSearchQuery(input, limit)
 
-	b, _ := json.MarshalIndent(query, "", "  ")
-	logging.Debug("query: " + string(b))
-
 	// Prefer a raw-search method if you have it.
 	res, err := e.Elastic.Query().Match(e.TraceIndex, query)
 	if err != nil {
