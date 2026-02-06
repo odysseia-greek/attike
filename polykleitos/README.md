@@ -1,5 +1,17 @@
-# Vue 3 + Vite
+# polykleitos
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Frontend for exploring traces and metrics through the Euripides GraphQL API.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## How It Works
+
+- Renders dashboards for metrics summaries and trace inspection.
+- Queries Euripides GraphQL for live data.
+
+## Deployment
+
+Development overlay (Romaioi) deployment and ingress:
+- `github.com/odysseia-greek/mykenai/thrasyboulos/hydor/overlays/romaioi/attike/polykleitos`
+
+## Access
+
+- UI: `https://attike.byzantium.odysseia-greek`

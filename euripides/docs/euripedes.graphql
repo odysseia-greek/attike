@@ -1,146 +1,332 @@
-schema {
-  query: RootQuery
-}
+"""
+Directs the executor to defer this fragment when the `if` argument is true or undefined.
+"""
+directive @defer(
+  """Deferred when true or undefined."""
+  if: Boolean = true
 
-type RootQuery {
-  metrics(order: String, timeSpan: String): Metrics
+  """Unique name"""
+  label: String
+) on FRAGMENT_SPREAD | INLINE_FRAGMENT
 
-  """Get traces"""
-  traces(input: TraceQueryInput): [ParentTrace]
-}
+"""
+Indicates exactly one field must be supplied and this field must not be `null`.
+"""
+directive @oneOf on INPUT_OBJECT
 
+"""Exposes a URL that specifies the behavior of this scalar."""
+directive @specifiedBy(
+  """The URL that specifies the behavior of this scalar."""
+  url: String!
+) on SCALAR
 
-type CloseTrace {
-  itemType: String
-  metrics: tracingMetrics
-  namespace: String
-  parentSpanID: String
-  podName: String
-  responseBody: String
-  timestamp: String
-}
-
-type DatabaseSpan {
-  hits: Int
-  itemType: String
-  namespace: String
-  parentSpanID: String
-  podName: String
-  query: String
-  spanID: String
-  timestamp: String
-  took: String
-}
-
-type Grouped {
-  cpuHumanReadable: [String]
-  cpuRaw: [Int]
-  memoryHumanReadable: [String]
-  memoryRaw: [Int]
-  name: String
-}
-
-union Item = DatabaseSpan | Span | Trace | StartTrace | CloseTrace
-
-type Metrics {
-  cpuUnits: String
-  grouped: [Grouped]
-  memoryUnits: String
-  nodes: [Node]
-  pods: [Pod]
-  timeEnded: String
-  timeStamps: [String]
-  timeStarted: String
-}
-
-type Node {
-  cpuHumanReadable: [String]
-  cpuPercentage: [Float]
-  cpuPercentageHumanReadable: [String]
-  cpuRaw: [Int]
-  memoryHumanReadable: [String]
-  memoryPercentage: [Float]
-  memoryPercentageHumanReadable: [String]
-  memoryRaw: [Int]
-  nodeName: String
-}
-
-type ParentTrace {
-  isActive: Boolean
-  items: [Item]
-  responseCode: Int
-  timeEnded: String
-  timeStarted: String
-  totalTime: Int
-  traceID: String
-}
-
-type Pod {
-  cpuHumanReadable: [String]
-  cpuRaw: [Int]
-  memoryHumanReadable: [String]
-  memoryRaw: [Int]
-  name: String
-}
-
-type Span {
+type ActionEvent {
   action: String
-  itemType: String
-  namespace: String
-  parentSpanID: String
-  podName: String
-  requestBody: String
-  spanID: String
   status: String
-  timestamp: String
-  took: String
+  tookMs: Int
 }
 
-type StartTrace {
-  host: String
-  itemType: String
-  method: String
-  metrics: tracingMetrics
-  namespace: String
+type DatabaseSpanEvent {
+  action: String
+  query: String
+  hits: Int
+  tookMs: Int
+}
+
+scalar DateTime
+
+type EnqueueItems {
+  traces: [TraceSummary!]!
+  updatedAt: DateTime!
+}
+
+type GraphQLEvent {
   operation: String
-  parentSpanID: String
+  rootQuery: String
+}
+
+enum MetricGroupBy {
+  NONE
+  BY_NODE
+  BY_NAMESPACE
+  BY_POD
+}
+
+enum MetricOrderBy {
+  CPU_AVG
+  CPU_MAX
+  MEM_AVG
+  MEM_MAX
+}
+
+type MetricPoint {
+  timestamp: DateTime!
+  bucketMs: Int
+  count: Int
+  cpuMCoresAvg: Float
+  cpuMCoresMax: Float
+  cpuMCoresP95: Float
+  memBytesAvg: Float
+  memBytesMax: Float
+  memBytesP95: Float
+  source: MetricSource
+}
+
+enum MetricResolution {
+  AUTO
+  RAW
+  ROLLUP
+}
+
+interface MetricsAggRow {
+  docCount: Int!
+  sampleCount: Int
+  cpu: MetricStats!
+  mem: MetricStats!
+}
+
+input MetricScopeInput {
+  node: String
+  namespace: String
   podName: String
+  podUID: String
+}
+
+type MetricSeries {
+  label: MetricSeriesLabel!
+  points: [MetricPoint!]!
+}
+
+type MetricSeriesLabel {
+  node: String
+  namespace: String
+  podName: String
+  podUID: String
+}
+
+type MetricSeriesPage {
+  total: Int!
+  items: [MetricSeries!]!
+}
+
+type MetricsGroupNamespace {
+  total: Int!
+  items: [NamespaceMetricsAgg!]!
+}
+
+type MetricsGroupNode {
+  total: Int!
+  items: [NodeMetricsAgg!]!
+}
+
+type MetricsGroupPod {
+  total: Int!
+  items: [PodMetricsAgg!]!
+}
+
+type MetricSource {
+  aggregator: String
+  collector: String
+  method: String
+  windowKind: String
+  windowSamples: Int
+}
+
+"""
+Top-level “overview for a time window”.
+Everything is aggregated over the selected window.
+"""
+type MetricsSummary {
+  window: MetricsWindow!
+  start: DateTime!
+  end: DateTime!
+  nodes: MetricsGroupNode!
+  namespaces: MetricsGroupNamespace!
+  pods: MetricsGroupPod!
+}
+
+input MetricsSummaryInput {
+  window: MetricsWindow!
+}
+
+type MetricStats {
+  avg: Float
+  max: Float
+  p95: Float
+  avgHuman: String
+  maxHuman: String
+  p95Human: String
+  totalMax: Float
+  totalMaxHuman: String
+}
+
+enum MetricsWindow {
+  M10
+  M30
+  H1
+  H2
+  H12
+  H24
+}
+
+type NamespaceMetricsAgg implements MetricsAggRow {
+  namespace: String!
+  docCount: Int!
+  sampleCount: Int
+  cpu: MetricStats!
+  mem: MetricStats!
+  sortKey: Float
+}
+
+type NodeMetricsAgg implements MetricsAggRow {
+  node: String!
+  docCount: Int!
+  sampleCount: Int
+  cpu: MetricStats!
+  mem: MetricStats!
+  sortKey: Float
+}
+
+enum OrderDirection {
+  ASC
+  DESC
+}
+
+input PaginationInput {
+  limit: Int = 50
+  offset: Int = 0
+}
+
+type PodMetricsAgg implements MetricsAggRow {
+  podName: String!
+  namespace: String
+  node: String
+  docCount: Int!
+  sampleCount: Int
+  cpu: MetricStats!
+  mem: MetricStats!
+  sortKey: Float
+}
+
+type Query {
+  trace(id: ID!): Trace
+  tracePoll(limit: Int!): EnqueueItems
+  traceSearch(input: TraceSearchInput!): TracePage!
+  metricsRaw(input: RawMetricsInput!): MetricSeriesPage
+  metricsSummary(input: MetricsSummaryInput!): MetricsSummary!
+  metrics(range: TimeRangeInput!, scope: MetricScopeInput, resolution: MetricResolution = AUTO, groupBy: MetricGroupBy = NONE, orderBy: MetricOrderBy = CPU_AVG, orderDir: OrderDirection = DESC, page: PaginationInput = {limit: 50, offset: 0}): MetricSeriesPage!
+}
+
+input RawMetricsInput {
+  podName: String
+  timeStamp: String
+}
+
+input TimeRangeInput {
+  start: DateTime!
+  end: DateTime!
+}
+
+type Trace {
+  id: ID!
+  isActive: Boolean!
+  timeStarted: DateTime!
+  timeEnded: DateTime
+  totalTimeMs: Int!
+  responseCode: Int!
+  namespace: String
+  podName: String
+  operation: String
+  hasDbSpan: Boolean!
+  hasAction: Boolean!
+  items: [TraceItem!]!
+}
+
+type TraceHopEvent {
+  method: String
+  url: String
+  host: String
+}
+
+type TraceHopStopEvent {
+  responseCode: Int
+  tookMs: Int
+}
+
+type TraceItem {
+  timestamp: DateTime!
+  itemType: TraceItemType!
+  spanId: String
+  parentSpanId: String
+  podName: String
+  namespace: String
+  payload: TraceItemPayload
+}
+
+union TraceItemPayload = TraceStartEvent | TraceHopEvent | GraphQLEvent | ActionEvent | DatabaseSpanEvent | TraceStopEvent | TraceHopStopEvent
+
+enum TraceItemType {
+  TRACE_START
+  TRACE_HOP
+  GRAPHQL
+  ACTION
+  DB_SPAN
+  TRACE_STOP
+  TRACE_HOP_STOP
+}
+
+enum TraceOrderBy {
+  TIME_STARTED
+  TIME_ENDED
+  TOTAL_TIME_MS
+  RESPONSE_CODE
+}
+
+type TracePage {
+  total: Int!
+  items: [TraceSummary!]!
+}
+
+input TraceSearchInput {
+  window: TraceWindow!
+  limit: Int = 50
+  responseCode: Int
+  timeTookGreaterThan: Int
+  operation: String
+}
+
+type TraceStartEvent {
+  method: String
+  url: String
+  host: String
   remoteAddress: String
   rootQuery: String
-  spanID: String
-  timestamp: String
-  url: String
-}
-
-type TraceParent {
-  host: String
-  itemType: String
-  method: String
-  metrics: tracingMetrics
-  namespace: String
-  parentSpanID: String
-  podName: String
-  spanID: String
-  timestamp: String
-  url: String
-}
-
-input TraceQueryInput {
-  statusCode: Int
-  beginTime: String
-  endTime: String
-  totalTimeHigherThan: Int
-  podName: String
   operation: String
-  ids: [String]
 }
 
-type tracingMetrics {
-  cpuHumanReadable: String
-  cpuRaw: Int
-  cpuUnits: String
-  memoryHumanReadable: String
-  memoryRaw: Int
-  memoryUnits: String
+type TraceStopEvent {
+  responseBody: String
+}
+
+type TraceSummary {
+  id: ID!
+  isActive: Boolean!
+  hasDbSpan: Boolean!
+  timeStarted: DateTime
+  timeEnded: DateTime
+  rootQuery: String!
+  totalTimeMs: Int!
+  responseCode: Int!
+  numberOfItems: Int!
+}
+
+enum TraceWindow {
+  M5
+  M10
+  M30
+  H1
+  H2
+  H12
+  H24
 }
 

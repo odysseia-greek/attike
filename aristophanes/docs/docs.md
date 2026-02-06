@@ -3,93 +3,104 @@
 
 ## Table of Contents
 
-- [aristophanes.proto](#aristophanes-proto)
-    - [CloseTraceRequest](#aristophanes-CloseTraceRequest)
-    - [DatabaseSpan](#aristophanes-DatabaseSpan)
-    - [DatabaseSpanRequest](#aristophanes-DatabaseSpanRequest)
-    - [Empty](#aristophanes-Empty)
-    - [HealthCheckResponse](#aristophanes-HealthCheckResponse)
-    - [ParabasisRequest](#aristophanes-ParabasisRequest)
-    - [Span](#aristophanes-Span)
-    - [SpanRequest](#aristophanes-SpanRequest)
-    - [StartTraceRequest](#aristophanes-StartTraceRequest)
-    - [Trace](#aristophanes-Trace)
-    - [TraceBare](#aristophanes-TraceBare)
-    - [TraceCommon](#aristophanes-TraceCommon)
-    - [TraceRequest](#aristophanes-TraceRequest)
-    - [TraceResponse](#aristophanes-TraceResponse)
-    - [TraceStart](#aristophanes-TraceStart)
-    - [TraceStop](#aristophanes-TraceStop)
-    - [TracingMetrics](#aristophanes-TracingMetrics)
+- [v1/aristophanes.proto](#v1_aristophanes-proto)
+    - [ActionEvent](#aristophanes-v1-ActionEvent)
+    - [AttikeEvent](#aristophanes-v1-AttikeEvent)
+    - [DatabaseSpanEvent](#aristophanes-v1-DatabaseSpanEvent)
+    - [Empty](#aristophanes-v1-Empty)
+    - [GraphQLEvent](#aristophanes-v1-GraphQLEvent)
+    - [HealthCheckResponse](#aristophanes-v1-HealthCheckResponse)
+    - [ObserveAction](#aristophanes-v1-ObserveAction)
+    - [ObserveDbSpan](#aristophanes-v1-ObserveDbSpan)
+    - [ObserveGraphQL](#aristophanes-v1-ObserveGraphQL)
+    - [ObserveRequest](#aristophanes-v1-ObserveRequest)
+    - [ObserveResponse](#aristophanes-v1-ObserveResponse)
+    - [ObserveTraceHop](#aristophanes-v1-ObserveTraceHop)
+    - [ObserveTraceHopStop](#aristophanes-v1-ObserveTraceHopStop)
+    - [ObserveTraceStart](#aristophanes-v1-ObserveTraceStart)
+    - [ObserveTraceStop](#aristophanes-v1-ObserveTraceStop)
+    - [TraceBare](#aristophanes-v1-TraceBare)
+    - [TraceCommon](#aristophanes-v1-TraceCommon)
+    - [TraceHopEvent](#aristophanes-v1-TraceHopEvent)
+    - [TraceHopStopEvent](#aristophanes-v1-TraceHopStopEvent)
+    - [TraceStartEvent](#aristophanes-v1-TraceStartEvent)
+    - [TraceStopEvent](#aristophanes-v1-TraceStopEvent)
   
-    - [TraceService](#aristophanes-TraceService)
+    - [ItemType](#aristophanes-v1-ItemType)
+  
+    - [TraceService](#aristophanes-v1-TraceService)
   
 - [Scalar Value Types](#scalar-value-types)
 
 
 
-<a name="aristophanes-proto"></a>
+<a name="v1_aristophanes-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## aristophanes.proto
+## v1/aristophanes.proto
 
 
 
-<a name="aristophanes-CloseTraceRequest"></a>
+<a name="aristophanes-v1-ActionEvent"></a>
 
-### CloseTraceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| response_body | [string](#string) |  | Optional: Response body data |
-| response_code | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="aristophanes-DatabaseSpan"></a>
-
-### DatabaseSpan
+### ActionEvent
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| query | [string](#string) |  | Database query statement |
-| time_started | [string](#string) |  | Reuse TraceCommon for common fields |
-| time_finished | [string](#string) |  |  |
+| action | [string](#string) |  |  |
+| status | [string](#string) |  |  |
+| took_ms | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-AttikeEvent"></a>
+
+### AttikeEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| common | [TraceCommon](#aristophanes-v1-TraceCommon) |  |  |
+| trace_start | [TraceStartEvent](#aristophanes-v1-TraceStartEvent) |  |  |
+| trace_hop | [TraceHopEvent](#aristophanes-v1-TraceHopEvent) |  |  |
+| graphql | [GraphQLEvent](#aristophanes-v1-GraphQLEvent) |  |  |
+| action | [ActionEvent](#aristophanes-v1-ActionEvent) |  |  |
+| db_span | [DatabaseSpanEvent](#aristophanes-v1-DatabaseSpanEvent) |  |  |
+| trace_stop | [TraceStopEvent](#aristophanes-v1-TraceStopEvent) |  |  |
+| trace_hop_stop | [TraceHopStopEvent](#aristophanes-v1-TraceHopStopEvent) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-DatabaseSpanEvent"></a>
+
+### DatabaseSpanEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  |  |
+| query | [string](#string) |  |  |
 | hits | [int64](#int64) |  |  |
-| took | [string](#string) |  |  |
-| common | [TraceCommon](#aristophanes-TraceCommon) |  |  |
+| took_ms | [int64](#int64) |  |  |
+| target | [string](#string) |  |  |
+| index | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="aristophanes-DatabaseSpanRequest"></a>
-
-### DatabaseSpanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [string](#string) |  | Action performed in the span |
-| query | [string](#string) |  | Database query statement |
-| hits | [int64](#int64) |  | Number of hits |
-| time_took | [int64](#int64) |  |  |
-
-
-
-
-
-
-<a name="aristophanes-Empty"></a>
+<a name="aristophanes-v1-Empty"></a>
 
 ### Empty
 
@@ -99,7 +110,23 @@
 
 
 
-<a name="aristophanes-HealthCheckResponse"></a>
+<a name="aristophanes-v1-GraphQLEvent"></a>
+
+### GraphQLEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| operation | [string](#string) |  |  |
+| root_query | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-HealthCheckResponse"></a>
 
 ### HealthCheckResponse
 
@@ -114,106 +141,177 @@
 
 
 
-<a name="aristophanes-ParabasisRequest"></a>
+<a name="aristophanes-v1-ObserveAction"></a>
 
-### ParabasisRequest
+### ObserveAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  | A single in-service action |
+| status | [string](#string) |  |  |
+| took_ms | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-ObserveDbSpan"></a>
+
+### ObserveDbSpan
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  | A database/search query (Elastic etc.)
+
+e.g. &#34;elastic.search&#34; |
+| query | [string](#string) |  | query body/string (careful with size) |
+| hits | [int64](#int64) |  |  |
+| took_ms | [int64](#int64) |  |  |
+| target | [string](#string) |  | &#34;elasticsearch&#34;, &#34;cassandra&#34;, ... |
+| index | [string](#string) |  | optional index/table |
+
+
+
+
+
+
+<a name="aristophanes-v1-ObserveGraphQL"></a>
+
+### ObserveGraphQL
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| operation | [string](#string) |  | GraphQL-specific context. Emit once near the start (or whenever known).
+
+GraphQL operation name |
+| root_query | [string](#string) |  | GraphQL query string (careful with size) |
+
+
+
+
+
+
+<a name="aristophanes-v1-ObserveRequest"></a>
+
+### ObserveRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | trace_id | [string](#string) |  |  |
-| parent_span_id | [string](#string) |  |  |
-| span_id | [string](#string) |  |  |
-| start_trace | [StartTraceRequest](#aristophanes-StartTraceRequest) |  |  |
-| trace | [TraceRequest](#aristophanes-TraceRequest) |  |  |
-| close_trace | [CloseTraceRequest](#aristophanes-CloseTraceRequest) |  |  |
-| span | [SpanRequest](#aristophanes-SpanRequest) |  |  |
-| database_span | [DatabaseSpanRequest](#aristophanes-DatabaseSpanRequest) |  |  |
+| span_id | [string](#string) |  | unique id for this event |
+| parent_span_id | [string](#string) |  | used to form a tree (optional) |
+| trace_start | [ObserveTraceStart](#aristophanes-v1-ObserveTraceStart) |  |  |
+| trace_hop | [ObserveTraceHop](#aristophanes-v1-ObserveTraceHop) |  |  |
+| trace_hop_stop | [ObserveTraceHopStop](#aristophanes-v1-ObserveTraceHopStop) |  |  |
+| graphql | [ObserveGraphQL](#aristophanes-v1-ObserveGraphQL) |  |  |
+| action | [ObserveAction](#aristophanes-v1-ObserveAction) |  |  |
+| db_span | [ObserveDbSpan](#aristophanes-v1-ObserveDbSpan) |  |  |
+| trace_stop | [ObserveTraceStop](#aristophanes-v1-ObserveTraceStop) |  |  |
 
 
 
 
 
 
-<a name="aristophanes-Span"></a>
+<a name="aristophanes-v1-ObserveResponse"></a>
 
-### Span
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [string](#string) |  | Action performed in the span |
-| status | [string](#string) |  |  |
-| took | [string](#string) |  |  |
-| common | [TraceCommon](#aristophanes-TraceCommon) |  |  |
-
-
-
-
-
-
-<a name="aristophanes-SpanRequest"></a>
-
-### SpanRequest
+### ObserveResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | [string](#string) |  | Action performed in the span |
-| status | [string](#string) |  |  |
-| took | [string](#string) |  |  |
+| ack | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="aristophanes-StartTraceRequest"></a>
+<a name="aristophanes-v1-ObserveTraceHop"></a>
 
-### StartTraceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | GET POST PUT, etc. |
-| url | [string](#string) |  | The URL called by a client |
-| host | [string](#string) |  | The host that generated the trace |
-| remote_address | [string](#string) |  | Remote address of the client |
-| operation | [string](#string) |  | Graphql operation that generated Trace start |
-| root_query | [string](#string) |  | Graphql Root Query |
-
-
-
-
-
-
-<a name="aristophanes-Trace"></a>
-
-### Trace
+### ObserveTraceHop
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | GET POST PUT, etc. |
-| url | [string](#string) |  | The URL called by a client |
-| host | [string](#string) |  | The host that generated the trace |
-| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
-| metrics | [TracingMetrics](#aristophanes-TracingMetrics) |  |  |
+| method | [string](#string) |  | A recorded step during the trace (service-to-service call, internal hop, etc.)
+
+&#34;GET&#34;, &#34;POST&#34;, &#34;grpc&#34;, &#34;internal&#34; |
+| url | [string](#string) |  | path or URL (for grpc you can use &#34;/pkg.Service/Method&#34;) |
+| host | [string](#string) |  | destination service/host |
 
 
 
 
 
 
-<a name="aristophanes-TraceBare"></a>
+<a name="aristophanes-v1-ObserveTraceHopStop"></a>
+
+### ObserveTraceHopStop
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| response_code | [int32](#int32) |  |  |
+| took_ms | [int64](#int64) |  | duration of this hop |
+
+
+
+
+
+
+<a name="aristophanes-v1-ObserveTraceStart"></a>
+
+### ObserveTraceStart
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| method | [string](#string) |  | Usually the inbound request that created the trace |
+| url | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+| remote_address | [string](#string) |  |  |
+| root_query | [string](#string) |  |  |
+| operation | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-ObserveTraceStop"></a>
+
+### ObserveTraceStop
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| response_body | [string](#string) |  |  |
+| response_code | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-TraceBare"></a>
 
 ### TraceBare
-
+Helper for middleware adapater
 
 
 | Field | Type | Label | Description |
@@ -227,112 +325,96 @@
 
 
 
-<a name="aristophanes-TraceCommon"></a>
+<a name="aristophanes-v1-TraceCommon"></a>
 
 ### TraceCommon
-Common message used in various trace-related messages
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| trace_id | [string](#string) |  |  |
 | span_id | [string](#string) |  |  |
-| parent_span_id | [string](#string) |  | The root parent_span_id |
-| timestamp | [string](#string) |  | Timestamp will be set automatically |
-| pod_name | [string](#string) |  | Pod that generated Trace |
-| namespace | [string](#string) |  | Namespace that generated Trace |
-| item_type | [string](#string) |  | TRACE, SPAN, etc. |
+| parent_span_id | [string](#string) |  |  |
+| timestamp | [string](#string) |  | UTC &#34;2006-01-02T15:04:05.000&#34; |
+| pod_name | [string](#string) |  |  |
+| namespace | [string](#string) |  |  |
+| item_type | [ItemType](#aristophanes-v1-ItemType) |  |  |
 
 
 
 
 
 
-<a name="aristophanes-TraceRequest"></a>
+<a name="aristophanes-v1-TraceHopEvent"></a>
 
-### TraceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | GET POST PUT, etc. |
-| url | [string](#string) |  | The URL called by a client |
-| host | [string](#string) |  | The host that generated the trace |
-
-
-
-
-
-
-<a name="aristophanes-TraceResponse"></a>
-
-### TraceResponse
+### TraceHopEvent
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| ack | [string](#string) |  |  |
+| method | [string](#string) |  |  |
+| url | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+| response_code | [int32](#int32) |  |  |
+| took_ms | [int64](#int64) |  |  |
 
 
 
 
 
 
-<a name="aristophanes-TraceStart"></a>
+<a name="aristophanes-v1-TraceHopStopEvent"></a>
 
-### TraceStart
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | GET POST PUT, etc. |
-| url | [string](#string) |  | The URL called by a client |
-| host | [string](#string) |  | The host that generated the trace |
-| remote_address | [string](#string) |  | Remote address of the client |
-| operation | [string](#string) |  | Graphql operation that generated Trace start |
-| root_query | [string](#string) |  | Graphql Root Query |
-| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
-| metrics | [TracingMetrics](#aristophanes-TracingMetrics) |  |  |
-
-
-
-
-
-
-<a name="aristophanes-TraceStop"></a>
-
-### TraceStop
+### TraceHopStopEvent
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| response_body | [string](#string) |  | The response generated when a 200 is returned |
-| common | [TraceCommon](#aristophanes-TraceCommon) |  | Reuse TraceCommon for common fields |
-| metrics | [TracingMetrics](#aristophanes-TracingMetrics) |  |  |
+| response_code | [int32](#int32) |  |  |
+| took_ms | [int64](#int64) |  |  |
 
 
 
 
 
 
-<a name="aristophanes-TracingMetrics"></a>
+<a name="aristophanes-v1-TraceStartEvent"></a>
 
-### TracingMetrics
+### TraceStartEvent
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| cpu_units | [string](#string) |  |  |
-| memory_units | [string](#string) |  |  |
-| name | [string](#string) |  |  |
-| cpu_raw | [int64](#int64) |  |  |
-| memory_raw | [int64](#int64) |  |  |
-| cpu_human_readable | [string](#string) |  |  |
-| memory_human_readable | [string](#string) |  |  |
+| method | [string](#string) |  |  |
+| url | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+| remote_address | [string](#string) |  |  |
+| root_query | [string](#string) |  |  |
+| operation | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="aristophanes-v1-TraceStopEvent"></a>
+
+### TraceStopEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| response_body | [string](#string) |  |  |
+| response_code | [int32](#int32) |  |  |
+| time_started | [string](#string) |  | Finalization fields so Aiskhylos doesn&#39;t need extra state |
+| time_ended | [string](#string) |  |  |
+| total_time_ms | [int64](#int64) |  |  |
+| is_closed | [bool](#bool) |  |  |
 
 
 
@@ -340,20 +422,38 @@ Common message used in various trace-related messages
 
  
 
- 
+
+<a name="aristophanes-v1-ItemType"></a>
+
+### ItemType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ITEM_TYPE_UNSPECIFIED | 0 |  |
+| TRACE_START | 1 |  |
+| TRACE_HOP | 2 |  |
+| GRAPHQL | 3 |  |
+| ACTION | 4 |  |
+| DB_SPAN | 5 |  |
+| TRACE_STOP | 6 |  |
+| TRACE_HOP_STOP | 7 |  |
+
 
  
 
+ 
 
-<a name="aristophanes-TraceService"></a>
+
+<a name="aristophanes-v1-TraceService"></a>
 
 ### TraceService
-The TraceService service provides operations for managing and tracking traces and spans.
+
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| HealthCheck | [Empty](#aristophanes-Empty) | [HealthCheckResponse](#aristophanes-HealthCheckResponse) |  |
-| Chorus | [ParabasisRequest](#aristophanes-ParabasisRequest) stream | [TraceResponse](#aristophanes-TraceResponse) |  |
+| HealthCheck | [Empty](#aristophanes-v1-Empty) | [HealthCheckResponse](#aristophanes-v1-HealthCheckResponse) |  |
+| Chorus | [ObserveRequest](#aristophanes-v1-ObserveRequest) stream | [ObserveResponse](#aristophanes-v1-ObserveResponse) |  |
 
  
 

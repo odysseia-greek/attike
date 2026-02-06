@@ -2,9 +2,9 @@ import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client/core';
 import { provideApolloClient, DefaultApolloClient } from '@vue/apollo-composable';
 
 // Define the URL for the GraphQL server
-let url = document.location.origin + '/graphql';
+let url = document.location.origin + '/euripides/graphql';
 if (process.env.NODE_ENV === 'development') {
-    url = 'http://localhost:8080/graphql';
+    url = 'http://localhost:8080/euripides/graphql';
 }
 
 if (process.env.NODE_ENV === 'local') {
