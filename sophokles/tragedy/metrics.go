@@ -2,72 +2,159 @@ package tragedy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/odysseia-greek/agora/plato/logging"
-	pb "github.com/odysseia-greek/attike/sophokles/proto"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"io"
+	"net/http"
 	"time"
+
+	"github.com/odysseia-greek/agora/plato/logging"
 )
 
-func (m *MetricServiceImpl) HealthCheck(ctx context.Context, health *pb.Empty) (*pb.HealthCheckResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
+const (
+	saTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	saCAPath    = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+)
 
-	pod, err := m.Kube.CoreV1().Pods(m.Namespace).Get(ctx, m.PodName, v1.GetOptions{})
-
-	response := &pb.HealthCheckResponse{
-		Healthy: true,
-		Status:  string(pod.Status.Phase),
+func (c *Collector) Run(ctx context.Context) error {
+	if err := c.scrapeOnce(ctx); err != nil {
+		logging.Error(fmt.Sprintf("initial scrape failed: %v", err))
 	}
 
-	if err != nil {
-		logging.Error(err.Error())
-		response.Healthy = false
-		response.Status = err.Error()
-	}
+	ticker := time.NewTicker(c.ScrapeInterval)
+	defer ticker.Stop()
 
-	return response, nil
+	for {
+		select {
+		case <-ctx.Done():
+			logging.System("Sophokles shutting down.")
+			return nil
+		case <-ticker.C:
+			if err := c.scrapeOnce(ctx); err != nil {
+				logging.Error(fmt.Sprintf("scrape failed: %v", err))
+			}
+		}
+	}
 }
 
-func (m *MetricServiceImpl) FetchMetrics(ctx context.Context, request *pb.Empty) (*pb.MetricsResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+func (c *Collector) scrapeOnce(parent context.Context) error {
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
 
-	response := &pb.MetricsResponse{
-		MemoryUnits: "mb",
-		CpuUnits:    "millicores",
-		Pod:         &pb.PodMetrics{},
-	}
-
-	podMetrics, err := m.Kube.MetricsClient().MetricsV1beta1().PodMetricses(m.Namespace).Get(ctx, m.PodName, v1.GetOptions{})
+	summary, err := c.fetchStatsSummary(ctx)
 	if err != nil {
-		logging.Error(err.Error())
-		return nil, err
+		return err
 	}
+	nodeCPU := int64(0)
+	if summary.Node.CPU.UsageNanoCores != nil {
+		nodeCPU = int64(*summary.Node.CPU.UsageNanoCores / 1_000_000)
+	}
+	nodeMem := int64(0)
+	if summary.Node.Memory.WorkingSetBytes != nil {
+		nodeMem = int64(*summary.Node.Memory.WorkingSetBytes)
+	}
+	nodeTotals := &ResourceTotals{CPUMillicores: nodeCPU, MemoryBytes: nodeMem}
 
-	var totalMemory int64
-	var totalCpu int64
-
-	for _, container := range podMetrics.Containers {
-		totalMemory = totalMemory + container.Usage.Memory().Value()/1024/1024
-		totalCpu = totalCpu + container.Usage.Cpu().MilliValue()
-		containerMetrics := &pb.ContainerMetrics{
-			ContainerName:                container.Name,
-			ContainerCpuRaw:              container.Usage.Cpu().MilliValue(),
-			ContainerMemoryRaw:           container.Usage.Memory().Value() / 1024 / 1024,
-			ContainerCpuHumanReadable:    fmt.Sprintf("%vm", container.Usage.Cpu().MilliValue()),
-			ContainerMemoryHumanReadable: fmt.Sprintf("%vMi", container.Usage.Memory().Value()/1024/1024),
+	// Emit one MetricSample per pod
+	now := time.Now().UTC()
+	for _, p := range summary.Pods {
+		ns := p.PodRef.Namespace
+		if _, skip := c.ExcludeNamespaces[ns]; skip {
+			continue
 		}
 
-		response.Pod.Containers = append(response.Pod.Containers, containerMetrics)
+		var totalcpuMcores int64
+		var totalmemBytes int64
+		containers := make([]ContainerSample, 0, len(p.Containers))
+
+		for _, ctr := range p.Containers {
+			// Prefer instantaneous usageNanoCores (if present).
+			cpuMcores := int64(0)
+			if ctr.CPU.UsageNanoCores != nil {
+				// 1 millicore = 1e6 nanocores
+				cpuMcores = int64(*ctr.CPU.UsageNanoCores / 1_000_000)
+			}
+
+			memBytes := int64(0)
+			if ctr.Memory.WorkingSetBytes != nil {
+				memBytes = int64(*ctr.Memory.WorkingSetBytes)
+			}
+
+			totalcpuMcores += cpuMcores
+			totalmemBytes += memBytes
+
+			containers = append(containers, ContainerSample{
+				Name: ctr.Name,
+				Totals: ResourceTotals{
+					CPUMillicores: cpuMcores,
+					MemoryBytes:   memBytes,
+				},
+			})
+		}
+
+		sample := MetricSample{
+			SchemaVersion: 1,
+			Timestamp:     now,
+			Node:          NodeRef{Name: c.NodeName},
+			NodeTotals:    nodeTotals,
+			Workload: WorkloadRef{
+				Namespace: ns,
+				PodName:   p.PodRef.Name,
+				PodUID:    p.PodRef.UID,
+			},
+			PodTotals: ResourceTotals{
+				CPUMillicores: totalcpuMcores,
+				MemoryBytes:   totalmemBytes,
+			},
+			Containers: containers,
+			Source: SourceMeta{
+				Collector:        "sophokles",
+				Method:           "kubelet_stats_summary_via_apiserver_proxy",
+				ScrapeDurationMS: time.Since(start).Milliseconds(),
+			},
+		}
+
+		b, err := json.Marshal(sample)
+		if err != nil {
+			logging.Error(fmt.Sprintf("marshal sample failed for %s/%s: %v", ns, p.PodRef.Name, err))
+			continue
+		}
+		err = c.enqueueTask(ctx, string(b))
+		if err != nil {
+			logging.Error(fmt.Sprintf("queue failed %s/%s: %v", ns, p.PodRef.Name, err))
+			continue
+		}
 	}
 
-	response.Pod.CpuRaw = totalCpu
-	response.Pod.MemoryRaw = totalMemory
-	response.Pod.CpuHumanReadable = fmt.Sprintf("%vm", totalCpu)
-	response.Pod.MemoryHumanReadable = fmt.Sprintf("%vMi", totalMemory)
+	return nil
+}
 
-	metricLog := fmt.Sprintf("name: %s | cpu: %s | memory: %s |", response.Pod.Name, response.Pod.CpuHumanReadable, response.Pod.MemoryHumanReadable)
-	logging.Info(metricLog)
-	return response, nil
+func (c *Collector) fetchStatsSummary(ctx context.Context) (*StatsSummary, error) {
+	url := fmt.Sprintf("%s/api/v1/nodes/%s/proxy/stats/summary", c.APIServerURL, c.NodeName)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+string(c.BearerToken))
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("GET stats summary: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("stats summary non-2xx: %s body=%s", resp.Status, string(body))
+	}
+
+	var summary StatsSummary
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&summary); err != nil {
+		return nil, fmt.Errorf("decode stats summary: %w", err)
+	}
+
+	return &summary, nil
 }

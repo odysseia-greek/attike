@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/odysseia-greek/agora/plato/logging"
-	"github.com/odysseia-greek/attike/euripides/schemas"
-	"github.com/odysseia-greek/attike/euripides/tragedy"
+	"log"
 	"net/http"
 	"os"
+
+	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/attike/euripides/gateway"
+	"github.com/odysseia-greek/attike/euripides/routing"
 )
 
 const standardPort = ":8080"
@@ -33,12 +36,21 @@ func main() {
 
 	}
 
-	schemas.InitEuripidesHandler()
-	srv := tragedy.InitRoutes()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	logging.System(fmt.Sprintf("%s : %s", "running on port", port))
-	err := http.ListenAndServe(port, srv)
+	handler, err := gateway.CreateNewConfig(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+
+	handler.StartTraceReportReader(ctx)
+
+	graphqlServer := routing.InitRoutes(handler)
+
+	logging.System(fmt.Sprintf("Server running on port %s", port))
+	err = http.ListenAndServe(port, graphqlServer)
+	if err != nil {
+		log.Fatal("Server failed to start: ", err)
 	}
 }

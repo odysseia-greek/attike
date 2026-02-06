@@ -1,8 +1,8 @@
 {
     "internal_proxy": {"log_level": "mirrord=trace", "log_destination": "/tmp/mirrord.log"},
-    "target": "{{ get_env(name="TARGET", default="deploy/herodotos/container/aristophanes") }}",
+    "target": "{{ get_env(name="TARGET", default="deployment/euripides/container/euripides") }}",
     "agent": {
-        "namespace": "odysseia",
+        "namespace": "attike",
         "log_level": "mirrord=trace",
         "ephemeral": false
     },

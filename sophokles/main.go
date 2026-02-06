@@ -1,24 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"os/signal"
+	"syscall"
+
 	"github.com/odysseia-greek/agora/plato/logging"
-	pb "github.com/odysseia-greek/attike/sophokles/proto"
 	"github.com/odysseia-greek/attike/sophokles/tragedy"
-	"google.golang.org/grpc"
-	"log"
-	"net"
-	"os"
 )
 
-const standardPort = ":50053"
-
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = standardPort
-	}
-
 	// https://patorjk.com/software/taag/#p=display&f=Crawford2&t=SOPHOKLES
 	logging.System(`
   _____  ___   ____  __ __   ___   __  _  _        ___  _____
@@ -28,32 +19,25 @@ func main() {
  /  \ ||     ||  |  |  |  ||     ||     ||     ||   [_ /  \ |
  \    ||     ||  |  |  |  ||     ||  .  ||     ||     |\    |
   \___| \___/ |__|  |__|__| \___/ |__|\_||_____||_____| \___|
-
 	`)
 
 	logging.System("οὐ γὰρ θανεῖν ἔχθιστον, ἀλλʼ ὅταν θανεῖν. χρῄζων τις εἶτα μηδὲ τοῦτʼ ἔχῃ λαβεῖν.")
 	logging.System("For death is not the most odious thing; it is rather craving death, but lacking the means to die.")
-	logging.System("Starting up...")
+	logging.System("Starting Sophokles collector...")
 
-	metricsClient, err := tragedy.NewMetricServiceImpl()
+	collector, err := tragedy.NewCollector()
 	if err != nil {
-		log.Fatalf("error creating MetricsServiceClient: %v", err)
+		logging.Error(err.Error())
+		panic(err)
 	}
 
-	listener, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	logging.System("Starting up runner!")
+
+	if err := collector.Run(ctx); err != nil {
+		logging.Error(err.Error())
+		panic(err)
 	}
-
-	var server *grpc.Server
-
-	server = grpc.NewServer()
-
-	pb.RegisterMetricsServiceServer(server, metricsClient)
-
-	logging.System(fmt.Sprintf("Server listening on %s", port))
-	if err := server.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
-
 }
