@@ -24,19 +24,19 @@ how you understand event modeling, sampling, storage, and query design.
 ### Flow
 
 ```
-[Main container in pod] -> [aristophanes sidecar] -> [eupalinos queue] <- [sophokles daemonset]  
-                                                             |
-                                                             v
-                                                       [aiskhylos] -> [Elastic]
-                                                             |
-                                                             v
-                                                       [euripides] -> [polykleitos]
+[Main container in pod] -> [aristophanes sidecar] -> [eupalinos queue] <- [sophokles daemonset]
+                                                           |
+                                                           v
+                                                     [aiskhylos] -> [Elastic]
+                                                           |
+                                                           v
+                                                     [euripides] -> [polykleitos]
 ```
 
 ### Data Path Detail (Text)
 
-- Main container emits traces and metrics to aristophanes.
-- Aristophanes and sophokles push events to eupalinos.
+- Main container emits traces to aristophanes.
+- Sophokles pushes metrics to eupalinos.
 - Aiskhylos reads from eupalinos and indexes into Elastic.
 - Euripides queries Elastic and serves GraphQL.
 - Polykleitos renders data from euripides.
@@ -56,6 +56,22 @@ Note: `romaioi` is the development environment.
 - Euripides GraphQL: `https://attike.byzantium.odysseia-greek/euripides/graphql`
 - Euripides REST: `https://attike.byzantium.odysseia-greek/euripides/v1`
 - Polykleitos UI: `https://attike.byzantium.odysseia-greek`
+
+## Local Development (mirrord in GoLand)
+
+This setup is intentionally specific to the GoLand plugin workflow.
+
+- Install and enable the mirrord plugin in GoLand.
+- Open Run / Debug Configurations and add a `go build` configuration.
+- Set `package` to the service you want to run locally.
+- Add an env var for the target workload, for example:
+
+```bash
+TARGET=deploy/euripides/container/euripides
+```
+
+When you Run or Debug, mirrord attaches to the target workload and routes
+traffic so your local process behaves as if it is inside the cluster.
 
 ## GraphQL Examples
 
