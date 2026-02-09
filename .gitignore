@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+
+# idea
+.idea
+
+# docs
+*/docs/docs.html
+*/docs/docs.md
+*/docs/public
