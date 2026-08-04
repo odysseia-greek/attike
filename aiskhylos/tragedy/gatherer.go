@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/odysseia-greek/agora/aristoteles"
-	pb "github.com/odysseia-greek/agora/eupalinos/proto"
 	"github.com/odysseia-greek/agora/eupalinos/stomion"
+	pb "github.com/odysseia-greek/agora/eupalinos/v1"
 )
 
 type GathererImpl struct {

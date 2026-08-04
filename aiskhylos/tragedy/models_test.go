@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/odysseia-greek/agora/eupalinos/proto"
+	pb "github.com/odysseia-greek/agora/eupalinos/v1"
 )
 
 func TestParseMetricSampleFromEpistello(t *testing.T) {

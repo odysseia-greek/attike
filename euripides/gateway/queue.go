@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	pb "github.com/odysseia-greek/agora/eupalinos/proto"
+	pb "github.com/odysseia-greek/agora/eupalinos/v1"
 	"github.com/odysseia-greek/agora/plato/logging"
 	"github.com/odysseia-greek/attike/euripides/models"
 )
@@ -58,7 +58,7 @@ func (e *EuripidesHandler) drainTraceReportsOnce(ctx context.Context, cfg TraceR
 
 	for drained < cfg.MaxDrainPerPoll {
 		dctx, cancel := context.WithTimeout(ctx, cfg.DequeueWait)
-		msg, err := e.Eupalinos.DequeueMessageBytes(dctx, &pb.ChannelInfo{Name: e.ReportChannel})
+		msg, err := e.Eupalinos.DequeueMessageBytes(dctx, &pb.ChannelInfo{Name: e.ReportChannel, AckMode: true})
 		cancel()
 
 		if err != nil {
@@ -74,7 +74,7 @@ func (e *EuripidesHandler) drainTraceReportsOnce(ctx context.Context, cfg TraceR
 		}
 
 		logging.Trace("trace report received: " + string(msg.Data))
-		
+
 		var item models.TraceRootSource
 		if err := json.Unmarshal(msg.Data, &item); err != nil {
 			logging.Warn("failed to unmarshal TraceRootSource: " + err.Error())
@@ -85,6 +85,10 @@ func (e *EuripidesHandler) drainTraceReportsOnce(ctx context.Context, cfg TraceR
 		}
 
 		e.upsertTraceReport(item)
+		if _, err := e.Eupalinos.AcknowledgeMessage(ctx, &pb.AcknowledgeRequest{Channel: e.ReportChannel, Id: msg.Id}); err != nil {
+			logging.Warn("failed to acknowledge trace report: " + err.Error())
+			continue
+		}
 		drained++
 	}
 

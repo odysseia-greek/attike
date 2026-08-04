@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	pb "github.com/odysseia-greek/agora/eupalinos/proto"
+	pb "github.com/odysseia-greek/agora/eupalinos/v1"
 )
 
 // TraceDoc is the top-level document for your "trace" index.

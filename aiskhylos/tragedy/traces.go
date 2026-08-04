@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/odysseia-greek/agora/eupalinos/proto"
+	pb "github.com/odysseia-greek/agora/eupalinos/v1"
 	"github.com/odysseia-greek/agora/plato/logging"
 	"github.com/odysseia-greek/agora/plato/service"
 
@@ -144,7 +144,7 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 
 		default:
 			// Block on dequeue, but still respond to ctx cancellation:
-			msg, err := g.Eupalinos.DequeueMessageBytes(ctx, &pb.ChannelInfo{Name: g.TraceChannel})
+			msg, err := g.Eupalinos.DequeueMessageBytes(ctx, &pb.ChannelInfo{Name: g.TraceChannel, AckMode: true})
 			if err != nil {
 				// If ctx is cancelled, we’ll hit ctx.Done on next loop.
 				time.Sleep(cfg.IdleBackoff)
@@ -306,6 +306,10 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 			}
 
 			mu.Unlock()
+
+			if _, err := g.Eupalinos.AcknowledgeMessage(ctx, &pb.AcknowledgeRequest{Channel: g.TraceChannel, Id: msg.Id}); err != nil {
+				logging.Warn("failed to acknowledge trace message: " + err.Error())
+			}
 		}
 	}
 }

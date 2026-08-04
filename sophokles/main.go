@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/odysseia-greek/agora/plato/logging"
+	"github.com/odysseia-greek/attike/sophokles/networkobserver"
 	"github.com/odysseia-greek/attike/sophokles/tragedy"
 )
 
@@ -35,6 +36,17 @@ func main() {
 	defer stop()
 
 	logging.System("Starting up runner!")
+
+	observer, observerErr := networkobserver.NewFromEnv()
+	if observerErr != nil {
+		logging.Error("network observer disabled: " + observerErr.Error())
+	} else if observer.Enabled {
+		go func() {
+			if err := observer.Run(ctx); err != nil {
+				logging.Error("network observer stopped: " + err.Error())
+			}
+		}()
+	}
 
 	if err := collector.Run(ctx); err != nil {
 		logging.Error(err.Error())

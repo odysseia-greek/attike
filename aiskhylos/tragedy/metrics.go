@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/odysseia-greek/agora/eupalinos/proto"
+	pb "github.com/odysseia-greek/agora/eupalinos/v1"
 	"github.com/odysseia-greek/agora/plato/logging"
 )
 
@@ -74,7 +74,7 @@ func (g *GathererImpl) consumeMetricQueue(ctx context.Context) {
 		default:
 		}
 
-		msg, err := g.Eupalinos.DequeueMessage(ctx, &pb.ChannelInfo{Name: g.MetricsChannel})
+		msg, err := g.Eupalinos.DequeueMessage(ctx, &pb.ChannelInfo{Name: g.MetricsChannel, AckMode: true})
 		if err != nil {
 			time.Sleep(g.MetricCfg.IdleBackoff)
 			continue
@@ -112,6 +112,10 @@ func (g *GathererImpl) decodeAndFanoutMetrics(ctx context.Context) {
 			select {
 			case g.rollupSamples <- parsed:
 			default:
+			}
+
+			if _, err := g.Eupalinos.AcknowledgeMessage(ctx, &pb.AcknowledgeRequest{Channel: g.MetricsChannel, Id: msg.Id}); err != nil {
+				logging.Warn("failed to acknowledge metric message: " + err.Error())
 			}
 		}
 	}
