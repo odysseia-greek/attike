@@ -16,7 +16,7 @@ func (e *EuripidesHandler) MetricsSummary(ctx context.Context, input *model.Metr
 
 	query := elastic.BuildMetricsSummary(input)
 
-	res, err := e.Elastic.Query().Match(e.MetricsRollupIndex, query)
+	res, err := e.Elastic.Query().MatchWithContext(ctx, e.MetricsRollupIndex, query)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package pneuma
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -20,9 +21,9 @@ type AnaximenesHandler struct {
 	Ambassador              *diplomat.ClientAmbassador
 }
 
-func (a *AnaximenesHandler) CreateAttikeIndices() {
+func (a *AnaximenesHandler) CreateAttikeIndices(ctx context.Context) {
 	for _, index := range a.Indices {
-		deleted, err := a.Elastic.Index().Delete(index)
+		deleted, err := a.Elastic.Index().DeleteWithContext(ctx, index)
 
 		logging.Info(fmt.Sprintf("delete response for %s: success=%v, err=%v",
 			index, deleted, err))
@@ -30,7 +31,7 @@ func (a *AnaximenesHandler) CreateAttikeIndices() {
 		if err != nil {
 			if strings.Contains(err.Error(), "index_not_found_exception") {
 				logging.Info(fmt.Sprintf("index %s not found, creating it", index))
-				err = a.createIndexAtStartup(index)
+				err = a.createIndexAtStartup(ctx, index)
 				if err != nil {
 					logging.Error(fmt.Sprintf("failed to create index: %v", err))
 				}
@@ -43,7 +44,7 @@ func (a *AnaximenesHandler) CreateAttikeIndices() {
 
 		if deleted {
 			logging.Info(fmt.Sprintf("recreating index %s after deletion", index))
-			err = a.createIndexAtStartup(index)
+			err = a.createIndexAtStartup(ctx, index)
 			if err != nil {
 				logging.Error(fmt.Sprintf("failed to recreate index: %v", err))
 			}
@@ -51,9 +52,9 @@ func (a *AnaximenesHandler) CreateAttikeIndices() {
 	}
 }
 
-func (a *AnaximenesHandler) createIndexAtStartup(index string) error {
+func (a *AnaximenesHandler) createIndexAtStartup(ctx context.Context, index string) error {
 	request := a.createMapping(index)
-	created, err := a.Elastic.Index().CreateWithAlias(index, request)
+	created, err := a.Elastic.Index().CreateWithAliasWithContext(ctx, index, request)
 	if err != nil {
 		return err
 	}

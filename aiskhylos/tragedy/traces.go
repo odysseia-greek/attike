@@ -93,7 +93,7 @@ func (g *GathererImpl) traceLoop(ctx context.Context, cfg TraceConfig) {
 			return
 		}
 
-		_, err = g.Elastic.Document().CreateWithId(cfg.Index, traceID, body)
+		_, err = g.Elastic.Document().CreateWithIdWithContext(ctx, cfg.Index, traceID, body)
 		if err != nil {
 			logging.Error("index trace doc failed: " + err.Error())
 			return

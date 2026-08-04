@@ -143,7 +143,7 @@ func (g *GathererImpl) bulkIndexMetrics(ctx context.Context) {
 
 		wg.Wait()
 
-		_, err := g.Elastic.Document().Bulk(buf, g.MetricCfg.Index)
+		_, err := g.Elastic.Document().BulkWithContext(ctx, buf, g.MetricCfg.Index)
 		if err != nil {
 			logging.Error("metrics bulk failed: " + err.Error())
 		}

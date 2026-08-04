@@ -56,7 +56,7 @@ func (e *EuripidesHandler) TraceSearch(ctx context.Context, input *model.TraceSe
 	query := elastic.BuildTraceSearchQuery(input, limit)
 
 	// Prefer a raw-search method if you have it.
-	res, err := e.Elastic.Query().Match(e.TraceIndex, query)
+	res, err := e.Elastic.Query().MatchWithContext(ctx, e.TraceIndex, query)
 	if err != nil {
 		logging.Error(err.Error())
 		return nil, err

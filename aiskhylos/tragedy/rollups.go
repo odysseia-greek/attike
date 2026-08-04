@@ -153,7 +153,7 @@ func (g *GathererImpl) rollupLoop(ctx context.Context, cfg RollupConfig, samples
 				wk.Key.UID,
 			)
 
-			_, err = g.Elastic.Document().CreateWithId(cfg.Index, id, body)
+			_, err = g.Elastic.Document().CreateWithIdWithContext(ctx, cfg.Index, id, body)
 			if err != nil {
 				logging.Error("rollup index failed: " + err.Error())
 			}

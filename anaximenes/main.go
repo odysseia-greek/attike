@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
 	"github.com/google/uuid"
 	"github.com/odysseia-greek/agora/plato/logging"
 	"github.com/odysseia-greek/attike/anaximenes/pneuma"
 	pb "github.com/odysseia-greek/delphi/aristides/proto"
-	"log"
-	"os"
-	"strings"
 )
 
 func main() {
@@ -34,12 +37,15 @@ func main() {
 		log.Fatal("death has found me")
 	}
 
-	handler.CreateAttikeIndices()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	handler.CreateAttikeIndices(ctx)
 
 	logging.Debug("closing Ambassador because job is done")
 	// just setting a code that could be used later to check is if it was sent from an actual service
 	uuidCode := uuid.New().String()
-	_, err = handler.Ambassador.ShutDown(context.Background(), &pb.ShutDownRequest{Code: uuidCode})
+	_, err = handler.Ambassador.ShutDown(ctx, &pb.ShutDownRequest{Code: uuidCode})
 	if err != nil {
 		logging.Error(err.Error())
 	}
